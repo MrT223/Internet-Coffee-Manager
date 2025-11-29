@@ -1,23 +1,24 @@
-// routes/adminRoutes.js
+import express from "express";
+import { protect } from "../middleware/auth.js";
+import { authorize } from "../middleware/role.js";
+//import * as adminController from "../controllers/adminController.js";
 
-const express = require("express");
-const { protect } = require("../middleware/auth");
-const { authorize } = require("../middleware/role");
-const adminController = require("../controllers/adminController");
 const router = express.Router();
 
+/*
 router.put(
   "/users/:id/change-role",
   protect,
-  authorize([1]), // CHỈ ADMIN
+  authorize([1]), 
   adminController.changeUserRole
 );
 
 router.get(
   "/dashboard-summary",
   protect,
-  authorize([1, 2]), // ADMIN VÀ STAFF
+  authorize([1, 2]),
   adminController.getDashboardSummary
 );
+*/
 
-module.exports = router;
+export default router;
