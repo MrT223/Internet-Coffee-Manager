@@ -22,8 +22,11 @@ function App() {
     <div className="App">
       <Routes>
         <Route path="/login" element={<Login />} />
+
         <Route path="/unauthorized" element={<Unauthorized />} />
+
         <Route path="/" element={<Navigate to="/login" replace />} />
+
         <Route
           path="/computers"
           element={
@@ -32,6 +35,7 @@ function App() {
             </ProtectedRoleRoute>
           }
         />
+
         <Route
           path="/admin/dashboard"
           element={

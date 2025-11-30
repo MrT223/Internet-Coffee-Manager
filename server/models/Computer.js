@@ -23,12 +23,12 @@ const Computer = sequelize.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM("trong", "co nguoi", "bao tri", "khoa"),
+      type: DataTypes.STRING,
       defaultValue: "bao tri",
     },
   },
   {
-    tableName: "Computer",
+    tableName: "computer",
     timestamps: false,
   }
 );

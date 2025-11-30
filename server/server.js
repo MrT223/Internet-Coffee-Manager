@@ -22,6 +22,7 @@ app.use(express.json());
 // --- ROUTES ---
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/computers", computerRoutes);
 
 // Route kiểm tra trạng thái server
 app.get("/", (req, res) => {
