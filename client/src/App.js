@@ -4,11 +4,19 @@ import Login from "./components/Login";
 import ProtectedRoleRoute from "./components/ProtectedRoleRoute";
 import "./App.css";
 
-// Tạo các component tạm thời để test chuyển trang (bạn sẽ thay thế bằng component thật sau)
-const AdminDashboard = () => <h2>Trang Admin Dashboard</h2>;
-const StaffControl = () => <h2>Trang Nhân viên</h2>;
-const UserHome = () => <h2>Trang Người dùng</h2>;
-const Unauthorized = () => <h2>Bạn không có quyền truy cập!</h2>;
+// --- Component giả lập các trang (Sẽ thay bằng trang thật sau) ---
+const AdminDashboard = () => (
+  <h2 style={{ padding: 20 }}>👑 Trang Quản Trị (Admin)</h2>
+);
+const StaffControl = () => (
+  <h2 style={{ padding: 20 }}>🛠️ Trang Nhân Viên (Staff)</h2>
+);
+const UserHome = () => (
+  <h2 style={{ padding: 20 }}>👤 Trang Người Dùng (User)</h2>
+);
+const Unauthorized = () => (
+  <h2 style={{ padding: 20, color: "red" }}>⛔ Không có quyền truy cập</h2>
+);
 
 function App() {
   return (
@@ -18,10 +26,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Chuyển hướng mặc định về login */}
+        {/* Mặc định chuyển về login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Route Admin (Role ID: 1) */}
+        {/* --- Các Route được bảo vệ --- */}
         <Route
           path="/admin/dashboard"
           element={
@@ -31,7 +39,6 @@ function App() {
           }
         />
 
-        {/* Route Staff (Role ID: 2) */}
         <Route
           path="/staff/control"
           element={
@@ -41,7 +48,6 @@ function App() {
           }
         />
 
-        {/* Route User (Role ID: 3) */}
         <Route
           path="/user/home"
           element={

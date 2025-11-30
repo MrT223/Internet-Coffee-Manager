@@ -12,7 +12,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Gọi API đến port 3636 của server
+      // Gọi API tới port 3636
       const response = await axios.post(
         "http://localhost:3636/api/auth/login",
         {
@@ -22,21 +22,20 @@ function Login() {
       );
 
       const { token, user } = response.data;
-
-      // Gọi hàm login từ Context để lưu trạng thái
       login(token, user);
-
       alert("Đăng nhập thành công!");
 
-      // Điều hướng dựa trên quyền hạn
+      // Chuyển hướng
       switch (user.role_id) {
-        case 1: // Admin
+        case 1:
           navigate("/admin/dashboard");
           break;
-        case 2: // Staff
+        case 2:
           navigate("/staff/control");
           break;
-        case 3: // User
+        case 3:
+          navigate("/user/home");
+          break;
         default:
           navigate("/user/home");
           break;
@@ -48,24 +47,49 @@ function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Đăng Nhập Hệ Thống Cyber</h2>
-      <input
-        type="text"
-        placeholder="Tên đăng nhập"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Mật khẩu"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <button type="submit">Đăng Nhập</button>
-    </form>
+    <div
+      className="login-container"
+      style={{ display: "flex", justifyContent: "center", marginTop: "50px" }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          width: "300px",
+        }}
+      >
+        <h2>Đăng Nhập</h2>
+        <input
+          type="text"
+          placeholder="Tên đăng nhập"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          style={{ padding: "8px" }}
+        />
+        <input
+          type="password"
+          placeholder="Mật khẩu"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          style={{ padding: "8px" }}
+        />
+        <button
+          type="submit"
+          style={{
+            padding: "10px",
+            background: "#007bff",
+            color: "white",
+            border: "none",
+          }}
+        >
+          Đăng Nhập
+        </button>
+      </form>
+    </div>
   );
 }
 
