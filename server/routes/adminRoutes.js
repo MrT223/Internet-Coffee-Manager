@@ -5,6 +5,14 @@ import * as adminController from "../controllers/adminController.js";
 
 const router = express.Router();
 
-router.get("/users", protect, authorize([1]), adminController.getAllUsers);
+router.use(protect, authorize([1]));
+
+router.get("/users", adminController.getAllUsers);
+
+router.post("/users", adminController.createUser);
+
+router.delete("/users/:id", adminController.deleteUser);
+
+router.put("/users/:id/topup", adminController.topUpBalance);
 
 export default router;
