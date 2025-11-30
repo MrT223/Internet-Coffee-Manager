@@ -7,6 +7,8 @@ const router = express.Router();
 
 router.get("/", protect, computerController.getAllComputers);
 
+router.post("/:id/book", protect, computerController.bookComputer);
+
 router.post("/", protect, authorize([1, 2]), computerController.createComputer);
 router.put(
   "/:id",
