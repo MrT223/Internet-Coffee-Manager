@@ -15,4 +15,6 @@ router.delete("/users/:id", adminController.deleteUser);
 
 router.put("/users/:id/topup", adminController.topUpBalance);
 
+router.put("/users/:id/role", adminController.changeUserRole);
+
 export default router;

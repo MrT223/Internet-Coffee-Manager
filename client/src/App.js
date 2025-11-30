@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import AdminDashboard from "./components/AdminDashboard";
 import ProtectedRoleRoute from "./components/ProtectedRoleRoute";
+import ComputerMap from "./components/ComputerMap";
 import "./App.css";
 
 // --- Component giả lập các trang (Sẽ thay bằng trang thật sau) ---
@@ -20,14 +21,17 @@ function App() {
   return (
     <div className="App">
       <Routes>
-        {/* Route công khai */}
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-
-        {/* Mặc định chuyển về login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* --- Các Route được bảo vệ --- */}
+        <Route
+          path="/computers"
+          element={
+            <ProtectedRoleRoute allowedRoles={[1, 2, 3]}>
+              <ComputerMap />
+            </ProtectedRoleRoute>
+          }
+        />
         <Route
           path="/admin/dashboard"
           element={
