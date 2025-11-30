@@ -1,13 +1,11 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
+import AdminDashboard from "./components/AdminDashboard";
 import ProtectedRoleRoute from "./components/ProtectedRoleRoute";
 import "./App.css";
 
 // --- Component giả lập các trang (Sẽ thay bằng trang thật sau) ---
-const AdminDashboard = () => (
-  <h2 style={{ padding: 20 }}>👑 Trang Quản Trị (Admin)</h2>
-);
 const StaffControl = () => (
   <h2 style={{ padding: 20 }}>🛠️ Trang Nhân Viên (Staff)</h2>
 );

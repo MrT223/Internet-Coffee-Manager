@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
-const ProtectedRoleRoute = ({ element: Element, allowedRoles, ...rest }) => {
+const ProtectedRoleRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
 
   if (!isAuthenticated) {
@@ -10,7 +10,7 @@ const ProtectedRoleRoute = ({ element: Element, allowedRoles, ...rest }) => {
   }
 
   if (user && allowedRoles.includes(user.role_id)) {
-    return <Element {...rest} />;
+    return children;
   }
 
   return <Navigate to="/unauthorized" replace />;
