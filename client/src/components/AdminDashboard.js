@@ -208,6 +208,13 @@ function AdminDashboard() {
             🖥️ Sơ Đồ Máy
           </button>
           <button
+            onClick={() => navigate("/admin/menu")}
+            style={{ ...styles.btnOrange, marginRight: "10px" }}
+            title="Quản lý đồ ăn thức uống"
+          >
+            🍔 Menu Dịch Vụ
+          </button>
+          <button
             onClick={() => {
               logout();
               navigate("/login");

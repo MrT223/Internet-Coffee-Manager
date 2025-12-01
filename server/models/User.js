@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import Role from "./Role.js"; // Import Role để làm khóa ngoại
+import Role from "./Role.js";
 
 const User = sequelize.define(
   "User",

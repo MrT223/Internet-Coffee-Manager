@@ -9,6 +9,7 @@ import User from "./models/User.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import computerRoutes from "./routes/computerRoutes.js";
+import menuRoutes from "./routes/menuRoutes.js";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/computers", computerRoutes);
+app.use("/api/menu", menuRoutes);
 
 // Route kiểm tra trạng thái server
 app.get("/", (req, res) => {
