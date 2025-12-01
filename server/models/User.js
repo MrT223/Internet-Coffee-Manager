@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
+import Role from "./Role.js"; // Import Role để làm khóa ngoại
 
 const User = sequelize.define(
   "User",
@@ -12,6 +13,7 @@ const User = sequelize.define(
     user_name: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     password: {
       type: DataTypes.STRING,
@@ -19,7 +21,10 @@ const User = sequelize.define(
     },
     role_id: {
       type: DataTypes.INTEGER,
-      defaultValue: 3, // Mặc định là User
+      references: {
+        model: Role,
+        key: "role_id",
+      },
     },
     balance: {
       type: DataTypes.INTEGER,
@@ -29,7 +34,6 @@ const User = sequelize.define(
   {
     tableName: "User",
     timestamps: false,
-    freezeTableName: true,
   }
 );
 

@@ -13,7 +13,7 @@ import computerRoutes from "./routes/computerRoutes.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3636;
+const PORT = process.env.DB_PORT || 3636;
 
 // --- MIDDLEWARES ---
 app.use(cors());
