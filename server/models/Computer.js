@@ -23,7 +23,6 @@ const Computer = sequelize.define(
       allowNull: false,
     },
     status: {
-      // Dùng STRING cho đơn giản, tránh lỗi tạo Type ENUM trùng lặp trong Postgres
       type: DataTypes.STRING,
       defaultValue: "bao tri",
     },

@@ -12,7 +12,7 @@ const Role = sequelize.define(
     role_name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true, // Tên quyền không được trùng
+      unique: true,
     },
   },
   {

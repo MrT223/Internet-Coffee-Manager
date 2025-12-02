@@ -295,7 +295,7 @@ function AdminDashboard() {
                   <select
                     style={{
                       ...styles.tableSelect,
-                      color: u.role_id === 2 ? "#28a745" : "#007bff", // Xanh lá (Staff) hoặc Xanh dương (User)
+                      color: u.role_id === 2 ? "#28a745" : "#007bff",
                       borderColor: u.role_id === 2 ? "#28a745" : "#007bff",
                     }}
                     value={u.role_id}
