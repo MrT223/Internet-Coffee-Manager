@@ -1,51 +1,46 @@
 import React, { useState } from "react";
 import { AuthContext } from "./AuthContext";
 
-const ROLE_ADMIN = 1;
-const ROLE_STAFF = 2;
-const ROLE_USER = 3;
-
 export const AuthProvider = ({ children }) => {
-  const initialToken = localStorage.getItem("token");
-  const initialUser = JSON.parse(localStorage.getItem("user"));
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-  const [token, setToken] = useState(initialToken);
-  const [user, setUser] = useState(initialUser);
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
 
-  const isAuthenticated = !!token && !!user;
-
-  const isAdmin = user?.role_id === ROLE_ADMIN;
-  const isStaff = user?.role_id === ROLE_STAFF;
-  const isUser = user?.role_id === ROLE_USER;
-
-  // --- Hàm Login ---
-  const login = (newToken, userInfo) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(userInfo));
+  const login = (newToken, newUser) => {
     setToken(newToken);
-    setUser(userInfo);
+    setUser(newUser);
+    localStorage.setItem("token", newToken);
+    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
-  // --- Hàm Logout ---
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
     setToken(null);
     setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  };
+
+  const updateUserBalance = (newBalance) => {
+    if (user) {
+      const updatedUser = { ...user, balance: newBalance };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
   };
 
   const contextValue = {
-    isAuthenticated,
     user,
     token,
     login,
     logout,
-    isAdmin,
-    isStaff,
-    isUser,
-    ROLE_ADMIN,
-    ROLE_STAFF,
-    ROLE_USER,
+    updateUserBalance,
+    isAuthenticated: !!token,
+    isAdmin: user?.role_id === 1,
+    isStaff: user?.role_id === 2,
+    isUser: user?.role_id === 3,
   };
 
   return (

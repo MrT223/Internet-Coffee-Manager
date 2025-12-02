@@ -6,6 +6,7 @@ import UserHome from "./components/UserHome";
 import ProtectedRoleRoute from "./components/ProtectedRoleRoute";
 import ComputerMap from "./components/ComputerMap";
 import MenuManager from "./components/MenuManager";
+import UserMenu from "./components/UserMenu";
 import "./App.css";
 
 const StaffControl = () => <h2 style={{ padding: 20 }}>🛠️ Trang Nhân Viên</h2>;
@@ -53,6 +54,15 @@ function App() {
           element={
             <ProtectedRoleRoute allowedRoles={[3]}>
               <UserHome />
+            </ProtectedRoleRoute>
+          }
+        />
+
+        <Route
+          path="/user/menu"
+          element={
+            <ProtectedRoleRoute allowedRoles={[3]}>
+              <UserMenu />
             </ProtectedRoleRoute>
           }
         />

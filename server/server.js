@@ -4,12 +4,15 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import sequelize from "./config/database.js";
 import User from "./models/User.js";
+import FoodOrder from "./models/FoodOrder.js";
+import OrderDetail from "./models/OrderDetail.js";
 
 // Import Routes
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import computerRoutes from "./routes/computerRoutes.js";
 import menuRoutes from "./routes/menuRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 dotenv.config();
 
@@ -25,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/computers", computerRoutes);
 app.use("/api/menu", menuRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Route kiểm tra trạng thái server
 app.get("/", (req, res) => {

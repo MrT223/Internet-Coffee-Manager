@@ -98,6 +98,13 @@ function UserHome() {
             🖥️ Đặt Máy Ngay
           </button>
 
+          <button
+            style={{ ...styles.btnPrimary, backgroundColor: "#fd7e14" }}
+            onClick={() => navigate("/user/menu")}
+          >
+            🍔 Gọi Đồ Ăn
+          </button>
+
           <button style={styles.btnSecondary} onClick={handleLogout}>
             Đăng Xuất
           </button>
