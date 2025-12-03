@@ -72,3 +72,62 @@ export const getMyOrders = async (req, res) => {
     res.status(500).json({ message: "Lỗi tải lịch sử đơn hàng." });
   }
 };
+
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await FoodOrder.findAll({
+      order: [["order_date", "DESC"]], // Đơn mới nhất lên đầu
+      include: [
+        {
+          model: User,
+          attributes: ["user_name"], // Lấy tên người đặt
+        },
+        {
+          model: OrderDetail,
+          include: [
+            { model: MenuItem, attributes: ["food_name"] }, // Lấy tên món ăn
+          ],
+        },
+      ],
+    });
+    res.json(orders);
+  } catch (error) {
+    console.error("Lỗi get all orders:", error);
+    res.status(500).json({ message: "Lỗi tải danh sách đơn hàng." });
+  }
+};
+
+// 2. Cập nhật trạng thái đơn hàng (Hoàn thành/Hủy)
+export const updateOrderStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'completed' hoặc 'cancelled'
+
+  const t = await sequelize.transaction();
+
+  try {
+    const order = await FoodOrder.findByPk(id);
+    if (!order) {
+      await t.rollback();
+      return res.status(404).json({ message: "Đơn hàng không tồn tại." });
+    }
+
+    // Nếu HỦY đơn -> Hoàn tiền lại cho khách
+    if (status === "cancelled" && order.status !== "cancelled") {
+      const user = await User.findByPk(order.user_id);
+      if (user) {
+        user.balance += order.total_amount;
+        await user.save({ transaction: t });
+      }
+    }
+
+    order.status = status;
+    await order.save({ transaction: t });
+
+    await t.commit();
+    res.json({ message: "Đã cập nhật trạng thái đơn hàng!", order });
+  } catch (error) {
+    await t.rollback();
+    console.error(error);
+    res.status(500).json({ message: "Lỗi cập nhật đơn hàng." });
+  }
+};

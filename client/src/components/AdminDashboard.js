@@ -207,6 +207,18 @@ function AdminDashboard() {
           >
             🖥️ Sơ Đồ Máy
           </button>
+
+          <button
+            onClick={() => navigate("/admin/orders")}
+            style={{
+              ...styles.btnBlue,
+              marginRight: "10px",
+              backgroundColor: "#6f42c1",
+            }}
+          >
+            📋 Đơn Hàng
+          </button>
+
           <button
             onClick={() => navigate("/admin/menu")}
             style={{ ...styles.btnOrange, marginRight: "10px" }}

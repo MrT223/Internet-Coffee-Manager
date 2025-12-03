@@ -7,6 +7,7 @@ import ProtectedRoleRoute from "./components/ProtectedRoleRoute";
 import ComputerMap from "./components/ComputerMap";
 import MenuManager from "./components/MenuManager";
 import UserMenu from "./components/UserMenu";
+import OrderManager from "./components/OrderManager";
 import "./App.css";
 
 const StaffControl = () => <h2 style={{ padding: 20 }}>🛠️ Trang Nhân Viên</h2>;
@@ -72,6 +73,15 @@ function App() {
           element={
             <ProtectedRoleRoute allowedRoles={[1, 2]}>
               <MenuManager />
+            </ProtectedRoleRoute>
+          }
+        />
+
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoleRoute allowedRoles={[1, 2]}>
+              <OrderManager />
             </ProtectedRoleRoute>
           }
         />

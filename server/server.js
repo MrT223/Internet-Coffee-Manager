@@ -3,7 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import sequelize from "./config/database.js";
+
+// Import Models
+import Role from "./models/Role.js";
 import User from "./models/User.js";
+import Computer from "./models/Computer.js";
+import MenuItem from "./models/MenuItem.js";
 import FoodOrder from "./models/FoodOrder.js";
 import OrderDetail from "./models/OrderDetail.js";
 
@@ -35,7 +40,18 @@ app.get("/", (req, res) => {
   res.send("Server Internet Coffee Manager đang chạy!");
 });
 
-// --- KHỞI ĐỘNG SERVER & KẾT NỐI DB ---
+Role.hasMany(User, { foreignKey: "role_id" });
+User.belongsTo(Role, { foreignKey: "role_id" });
+
+User.hasMany(FoodOrder, { foreignKey: "user_id" });
+FoodOrder.belongsTo(User, { foreignKey: "user_id" });
+
+FoodOrder.hasMany(OrderDetail, { foreignKey: "order_id" });
+OrderDetail.belongsTo(FoodOrder, { foreignKey: "order_id" });
+
+MenuItem.hasMany(OrderDetail, { foreignKey: "item_id" });
+OrderDetail.belongsTo(MenuItem, { foreignKey: "item_id" });
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();
