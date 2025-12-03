@@ -334,7 +334,6 @@ function UserMenu() {
           ))}
         </div>
 
-        {/* GIỎ HÀNG */}
         <div style={styles.cartPanel}>
           <h3 style={styles.cartTitle}>🛒 Giỏ Hàng</h3>
 

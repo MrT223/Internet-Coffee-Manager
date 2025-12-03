@@ -1,7 +1,7 @@
 import FoodOrder from "../models/FoodOrder.js";
 import OrderDetail from "../models/OrderDetail.js";
-import MenuItem from "../models/MenuItem.js";
 import User from "../models/User.js";
+import sequelize from "../config/database.js";
 
 export const placeOrder = async (req, res) => {
   const userId = req.user.user_id;
@@ -11,6 +11,8 @@ export const placeOrder = async (req, res) => {
     return res.status(400).json({ message: "Giỏ hàng trống." });
   }
 
+  const t = await sequelize.transaction();
+
   try {
     let totalAmount = 0;
     cart.forEach((item) => {
@@ -19,17 +21,21 @@ export const placeOrder = async (req, res) => {
 
     const user = await User.findByPk(userId);
     if (user.balance < totalAmount) {
+      await t.rollback();
       return res.status(400).json({ message: "Số dư không đủ để thanh toán." });
     }
 
     user.balance -= totalAmount;
-    await user.save();
+    await user.save({ transaction: t });
 
-    const newOrder = await FoodOrder.create({
-      user_id: userId,
-      total_amount: totalAmount,
-      status: "pending",
-    });
+    const newOrder = await FoodOrder.create(
+      {
+        user_id: userId,
+        total_amount: totalAmount,
+        status: "pending",
+      },
+      { transaction: t }
+    );
 
     const orderDetailsData = cart.map((item) => ({
       order_id: newOrder.bill_id,
@@ -39,15 +45,18 @@ export const placeOrder = async (req, res) => {
       subtotal: item.price * item.quantity,
     }));
 
-    await OrderDetail.bulkCreate(orderDetailsData);
+    await OrderDetail.bulkCreate(orderDetailsData, { transaction: t });
+
+    await t.commit();
 
     res.status(201).json({
-      message: "Đặt món thành công! Vui lòng đợi nhân viên phục vụ.",
+      message: "Đặt món thành công!",
       newBalance: user.balance,
     });
   } catch (error) {
+    await t.rollback();
     console.error("Lỗi đặt món:", error);
-    res.status(500).json({ message: "Lỗi hệ thống." });
+    res.status(500).json({ message: "Lỗi hệ thống, giao dịch đã bị hủy." });
   }
 };
 

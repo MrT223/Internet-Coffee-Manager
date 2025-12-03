@@ -7,15 +7,18 @@ const GRID_SIZE = 25;
 const CELL_SIZE = 40;
 
 function ComputerMap() {
-  const { token, user } = useContext(AuthContext);
-  const [computers, setComputers] = useState([]);
+  // Lấy hàm updateUserBalance từ Context
+  const { token, user, updateUserBalance } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [computers, setComputers] = useState([]);
 
+  // State cho Modal Đặt máy
   const [bookingModal, setBookingModal] = useState({
     show: false,
     computer: null,
   });
 
+  // Phân quyền
   const canManage = user && (user.role_id === 1 || user.role_id === 2);
   const isUser = user && user.role_id === 3;
 
@@ -34,7 +37,7 @@ function ComputerMap() {
     fetchComputers();
   }, [fetchComputers]);
 
-  // --- ADMIN/STAFF: Quản lý máy ---
+  // --- ADMIN/STAFF LOGIC ---
   const handleEmptyCellClick = async (x, y) => {
     if (!canManage) return;
     const name = prompt(
@@ -84,7 +87,7 @@ function ComputerMap() {
     }
   };
 
-  // --- USER: Mở Modal Đặt máy ---
+  // --- USER LOGIC ---
   const handleUserClick = (comp) => {
     if (comp.status !== "trong") {
       alert("Máy này không khả dụng!");
@@ -105,9 +108,18 @@ function ComputerMap() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+
       alert(res.data.message);
+
+      // --- QUAN TRỌNG: CẬP NHẬT SỐ DƯ NGAY LẬP TỨC ---
+      // Server trả về newBalance, ta cập nhật vào Context để Header hiển thị đúng
+      if (res.data.newBalance !== undefined) {
+        updateUserBalance(res.data.newBalance);
+      }
+      // ------------------------------------------------
+
       setBookingModal({ show: false, computer: null });
-      fetchComputers();
+      fetchComputers(); // Cập nhật màu máy (sang Vàng)
     } catch (error) {
       alert("Thất bại: " + (error.response?.data?.message || "Lỗi kết nối"));
       setBookingModal({ show: false, computer: null });
@@ -177,15 +189,15 @@ function ComputerMap() {
   const getStatusColor = (status) => {
     switch (status) {
       case "trong":
-        return "#28a745"; // Xanh lá
+        return "#28a745";
       case "dat truoc":
-        return "#ffc107"; // Vàng
+        return "#ffc107";
       case "co nguoi":
-        return "#dc3545"; // Đỏ
+        return "#dc3545";
       case "bao tri":
-        return "#fd7e14"; // Cam
+        return "#fd7e14";
       case "khoa":
-        return "#6c757d"; // Xám
+        return "#6c757d";
       default:
         return "#fff";
     }
