@@ -43,6 +43,9 @@ OrderDetail.belongsTo(FoodOrder, { foreignKey: "order_id" });
 MenuItem.hasMany(OrderDetail, { foreignKey: "item_id" });
 OrderDetail.belongsTo(MenuItem, { foreignKey: "item_id" });
 
+User.hasMany(Computer, { foreignKey: "current_user_id" });
+Computer.belongsTo(User, { foreignKey: "current_user_id", as: "CurrentUser" });
+
 app.get("/", (req, res) => {
   res.send("Server Internet Coffee Manager đang chạy!");
 });

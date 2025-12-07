@@ -8,11 +8,12 @@ function MenuManager() {
   const navigate = useNavigate();
   const [menu, setMenu] = useState([]);
 
-  const [newItem, setNewItem] = useState({
+  const [formData, setFormData] = useState({
     food_name: "",
     price: "",
     image_url: "",
   });
+  const [editingId, setEditingId] = useState(null);
 
   const canManage = user && (user.role_id === 1 || user.role_id === 2);
 
@@ -23,7 +24,7 @@ function MenuManager() {
       });
       setMenu(res.data);
     } catch (error) {
-      console.error("Lỗi load menu");
+      console.error("Lỗi tải menu");
     }
   };
 
@@ -31,18 +32,50 @@ function MenuManager() {
     fetchMenu();
   }, []);
 
-  const handleAdd = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.food_name || !formData.price)
+      return alert("Vui lòng nhập tên và giá!");
+
     try {
-      await axios.post("http://localhost:3636/api/menu", newItem, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert("Thêm món thành công!");
-      setNewItem({ food_name: "", price: "", image_url: "" });
+      if (editingId) {
+        await axios.put(
+          `http://localhost:3636/api/menu/${editingId}`,
+          formData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        alert("Cập nhật món thành công!");
+      } else {
+        await axios.post("http://localhost:3636/api/menu", formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert("Thêm món mới thành công!");
+      }
+
+      setFormData({ food_name: "", price: "", image_url: "" });
+      setEditingId(null);
       fetchMenu();
     } catch (error) {
-      alert("Lỗi thêm món");
+      alert("Lỗi: " + (error.response?.data?.message || "Không thể thực hiện"));
     }
+  };
+
+  const handleEditClick = (item) => {
+    setEditingId(item.item_id);
+    setFormData({
+      food_name: item.food_name,
+      price: item.price,
+      image_url: item.image_url || "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setFormData({ food_name: "", price: "", image_url: "" });
   };
 
   const toggleStock = async (item) => {
@@ -54,24 +87,29 @@ function MenuManager() {
       );
       fetchMenu();
     } catch (error) {
-      alert("Lỗi cập nhật");
+      alert("Lỗi cập nhật kho");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Xóa món này khỏi menu?")) return;
+    if (!window.confirm("Bạn có chắc muốn xóa món này vĩnh viễn?")) return;
     try {
       await axios.delete(`http://localhost:3636/api/menu/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchMenu();
     } catch (error) {
-      alert("Lỗi xóa");
+      alert("Lỗi xóa món");
     }
   };
 
   const styles = {
-    container: { padding: "20px", maxWidth: "1000px", margin: "0 auto" },
+    container: {
+      padding: "20px",
+      maxWidth: "1000px",
+      margin: "0 auto",
+      fontFamily: "Arial",
+    },
     header: {
       display: "flex",
       justifyContent: "space-between",
@@ -93,27 +131,46 @@ function MenuManager() {
       borderRadius: "10px",
       marginBottom: "30px",
       boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+      border: editingId ? "2px solid #ffc107" : "1px solid #dee2e6",
     },
-    inputGroup: { display: "flex", gap: "10px", marginBottom: "10px" },
+    formTitle: { marginTop: 0, color: editingId ? "#d39e00" : "#28a745" },
+    inputGroup: {
+      display: "flex",
+      gap: "10px",
+      marginBottom: "10px",
+      flexWrap: "wrap",
+    },
     input: {
       padding: "10px",
       flex: 1,
+      minWidth: "200px",
       borderRadius: "5px",
       border: "1px solid #ced4da",
     },
-    btnAdd: {
+
+    btnSubmit: {
       padding: "10px 20px",
-      background: "#28a745",
-      color: "white",
+      background: editingId ? "#ffc107" : "#28a745",
+      color: editingId ? "black" : "white",
       border: "none",
       borderRadius: "5px",
       cursor: "pointer",
       fontWeight: "bold",
     },
+    btnCancel: {
+      padding: "10px 20px",
+      background: "#6c757d",
+      color: "white",
+      border: "none",
+      borderRadius: "5px",
+      cursor: "pointer",
+      fontWeight: "bold",
+      marginLeft: "10px",
+    },
 
     grid: {
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+      gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
       gap: "20px",
     },
     card: {
@@ -125,7 +182,7 @@ function MenuManager() {
       position: "relative",
     },
     imgPlaceholder: {
-      height: "120px",
+      height: "140px",
       background: "#e9ecef",
       display: "flex",
       alignItems: "center",
@@ -137,9 +194,9 @@ function MenuManager() {
     itemName: { margin: "0 0 5px 0", fontSize: "18px" },
     itemPrice: { color: "#dc3545", fontWeight: "bold", fontSize: "16px" },
     badge: (stock) => ({
-      padding: "5px 10px",
-      borderRadius: "20px",
-      fontSize: "12px",
+      padding: "4px 8px",
+      borderRadius: "12px",
+      fontSize: "11px",
       float: "right",
       background: stock ? "#d4edda" : "#f8d7da",
       color: stock ? "#155724" : "#721c24",
@@ -148,18 +205,32 @@ function MenuManager() {
       display: "flex",
       justifyContent: "space-between",
       marginTop: "15px",
+      gap: "5px",
     },
+
     btnStock: {
+      flex: 1,
       fontSize: "12px",
-      padding: "5px 10px",
+      padding: "6px",
       cursor: "pointer",
       border: "1px solid #ccc",
       background: "white",
       borderRadius: "4px",
     },
-    btnDel: {
+    btnEdit: {
+      flex: 1,
       fontSize: "12px",
-      padding: "5px 10px",
+      padding: "6px",
+      cursor: "pointer",
+      background: "#ffc107",
+      color: "black",
+      border: "none",
+      borderRadius: "4px",
+    },
+    btnDel: {
+      flex: 1,
+      fontSize: "12px",
+      padding: "6px",
       cursor: "pointer",
       background: "#dc3545",
       color: "white",
@@ -189,16 +260,18 @@ function MenuManager() {
       </div>
 
       <div style={styles.formCard}>
-        <h3>➕ Thêm Món Mới</h3>
-        <form onSubmit={handleAdd}>
+        <h3 style={styles.formTitle}>
+          {editingId ? "✏️ Chỉnh Sửa Món Ăn" : "➕ Thêm Món Mới"}
+        </h3>
+        <form onSubmit={handleSubmit}>
           <div style={styles.inputGroup}>
             <input
               style={styles.input}
               placeholder="Tên món (VD: Mì tôm trứng)"
               required
-              value={newItem.food_name}
+              value={formData.food_name}
               onChange={(e) =>
-                setNewItem({ ...newItem, food_name: e.target.value })
+                setFormData({ ...formData, food_name: e.target.value })
               }
             />
             <input
@@ -206,9 +279,9 @@ function MenuManager() {
               type="number"
               placeholder="Giá (VNĐ)"
               required
-              value={newItem.price}
+              value={formData.price}
               onChange={(e) =>
-                setNewItem({ ...newItem, price: e.target.value })
+                setFormData({ ...formData, price: e.target.value })
               }
             />
           </div>
@@ -216,14 +289,25 @@ function MenuManager() {
             <input
               style={styles.input}
               placeholder="Link ảnh minh họa (Tùy chọn)"
-              value={newItem.image_url}
+              value={formData.image_url}
               onChange={(e) =>
-                setNewItem({ ...newItem, image_url: e.target.value })
+                setFormData({ ...formData, image_url: e.target.value })
               }
             />
-            <button type="submit" style={styles.btnAdd}>
-              Lưu Món
-            </button>
+            <div>
+              <button type="submit" style={styles.btnSubmit}>
+                {editingId ? "Lưu Thay Đổi" : "Thêm Ngay"}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  style={styles.btnCancel}
+                  onClick={handleCancelEdit}
+                >
+                  Hủy
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
@@ -238,7 +322,7 @@ function MenuManager() {
               <img
                 src={item.image_url}
                 alt={item.food_name}
-                style={{ width: "100%", height: "120px", objectFit: "cover" }}
+                style={{ width: "100%", height: "140px", objectFit: "cover" }}
               />
             ) : (
               <div style={styles.imgPlaceholder}>🍽️</div>
@@ -257,12 +341,21 @@ function MenuManager() {
                 <button
                   style={styles.btnStock}
                   onClick={() => toggleStock(item)}
+                  title="Đổi trạng thái kho"
                 >
                   {item.stock ? "Báo Hết" : "Báo Có"}
                 </button>
                 <button
+                  style={styles.btnEdit}
+                  onClick={() => handleEditClick(item)}
+                  title="Sửa thông tin"
+                >
+                  Sửa
+                </button>
+                <button
                   style={styles.btnDel}
                   onClick={() => handleDelete(item.item_id)}
+                  title="Xóa món này"
                 >
                   Xóa
                 </button>

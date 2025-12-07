@@ -26,6 +26,14 @@ const Computer = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: "bao tri",
     },
+    current_user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    session_start_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: "computer",
