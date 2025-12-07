@@ -98,3 +98,47 @@ export const bookComputer = async (req, res) => {
     res.status(500).json({ message: "Lỗi server." });
   }
 };
+
+export const startSession = async (req, res) => {
+  const { computerId, userId } = req.body;
+  const DEPOSIT = 5000;
+
+  const t = await sequelize.transaction();
+
+  try {
+    const computer = await Computer.findByPk(computerId);
+    const user = await User.findByPk(userId);
+
+    if (!computer || !user) {
+      await t.rollback();
+      return res.status(404).json({ message: "Không tìm thấy Máy hoặc User" });
+    }
+
+    if (computer.status === "dat truoc") {
+      computer.status = "co nguoi";
+      user.status = "playing";
+
+      user.balance += DEPOSIT;
+
+      await computer.save({ transaction: t });
+      await user.save({ transaction: t });
+
+      await t.commit();
+
+      res.json({
+        message:
+          "Bắt đầu phiên chơi thành công! Đã hoàn cọc 5000đ vào tài khoản chính.",
+        new_balance: user.balance,
+      });
+    } else {
+      await t.rollback();
+      res
+        .status(400)
+        .json({ message: "Máy chưa được đặt trước hoặc đang bận." });
+    }
+  } catch (error) {
+    await t.rollback();
+    console.error(error);
+    res.status(500).json({ message: "Lỗi bắt đầu phiên." });
+  }
+};

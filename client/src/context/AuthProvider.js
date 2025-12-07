@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { AuthContext } from "./AuthContext";
+import axios from "axios";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -16,11 +17,25 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("user", JSON.stringify(newUser));
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      if (token) {
+        await axios.post(
+          "http://localhost:3636/api/auth/logout",
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi logout server", error);
+    } finally {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
   };
 
   const updateUserBalance = (newBalance) => {

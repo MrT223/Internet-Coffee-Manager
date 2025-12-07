@@ -30,6 +30,10 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    status: {
+      type: DataTypes.STRING,
+      defaultValue: "offline",
+    },
   },
   {
     tableName: "User",

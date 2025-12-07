@@ -16,5 +16,11 @@ router.put(
   authorize([1, 2]),
   computerController.updateComputer
 );
+router.post(
+  "/start-session",
+  protect,
+  authorize([1, 2]),
+  computerController.startSession
+);
 
 export default router;

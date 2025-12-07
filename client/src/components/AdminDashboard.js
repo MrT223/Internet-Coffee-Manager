@@ -193,6 +193,31 @@ function AdminDashboard() {
       borderBottom: "1px solid #dee2e6",
       verticalAlign: "middle",
     },
+    statusBadge: (status) => ({
+      padding: "4px 8px",
+      borderRadius: "12px",
+      fontSize: "12px",
+      fontWeight: "bold",
+      backgroundColor:
+        status === "online"
+          ? "#d4edda"
+          : status === "playing"
+          ? "#cce5ff"
+          : "#e2e3e5",
+      color:
+        status === "online"
+          ? "#155724"
+          : status === "playing"
+          ? "#004085"
+          : "#383d41",
+      border: `1px solid ${
+        status === "online"
+          ? "#c3e6cb"
+          : status === "playing"
+          ? "#b8daff"
+          : "#d6d8db"
+      }`,
+    }),
   };
 
   return (
@@ -283,6 +308,7 @@ function AdminDashboard() {
           <tr>
             <th style={styles.th}>ID</th>
             <th style={styles.th}>Tên Đăng Nhập</th>
+            <th style={styles.th}>Trạng Thái</th>
             <th style={styles.th} width="160px">
               Role (Quyền)
             </th>
@@ -297,7 +323,15 @@ function AdminDashboard() {
               <td style={styles.td}>
                 <b>{u.user_name}</b>
               </td>
-
+              <td style={styles.td}>
+                <span style={styles.statusBadge(u.status)}>
+                  {u.status === "online"
+                    ? "🟢 Online Web"
+                    : u.status === "playing"
+                    ? "🎮 Đang Chơi"
+                    : "⚫ Offline"}
+                </span>
+              </td>
               <td style={styles.td}>
                 {u.role_id === 1 ? (
                   <span style={{ color: "red", fontWeight: "bold" }}>

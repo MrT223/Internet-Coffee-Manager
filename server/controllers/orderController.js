@@ -1,5 +1,6 @@
 import FoodOrder from "../models/FoodOrder.js";
 import OrderDetail from "../models/OrderDetail.js";
+import MenuItem from "../models/MenuItem.js";
 import User from "../models/User.js";
 import sequelize from "../config/database.js";
 
@@ -50,7 +51,7 @@ export const placeOrder = async (req, res) => {
     await t.commit();
 
     res.status(201).json({
-      message: "Đặt món thành công!",
+      message: "Đặt món thành công! Vui lòng đợi nhân viên phục vụ.",
       newBalance: user.balance,
     });
   } catch (error) {
@@ -76,17 +77,15 @@ export const getMyOrders = async (req, res) => {
 export const getAllOrders = async (req, res) => {
   try {
     const orders = await FoodOrder.findAll({
-      order: [["order_date", "DESC"]], // Đơn mới nhất lên đầu
+      order: [["order_date", "DESC"]],
       include: [
         {
           model: User,
-          attributes: ["user_name"], // Lấy tên người đặt
+          attributes: ["user_name"],
         },
         {
           model: OrderDetail,
-          include: [
-            { model: MenuItem, attributes: ["food_name"] }, // Lấy tên món ăn
-          ],
+          include: [{ model: MenuItem, attributes: ["food_name"] }],
         },
       ],
     });
@@ -97,10 +96,9 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
-// 2. Cập nhật trạng thái đơn hàng (Hoàn thành/Hủy)
 export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body; // 'completed' hoặc 'cancelled'
+  const { status } = req.body;
 
   const t = await sequelize.transaction();
 
@@ -110,8 +108,6 @@ export const updateOrderStatus = async (req, res) => {
       await t.rollback();
       return res.status(404).json({ message: "Đơn hàng không tồn tại." });
     }
-
-    // Nếu HỦY đơn -> Hoàn tiền lại cho khách
     if (status === "cancelled" && order.status !== "cancelled") {
       const user = await User.findByPk(order.user_id);
       if (user) {
@@ -124,7 +120,7 @@ export const updateOrderStatus = async (req, res) => {
     await order.save({ transaction: t });
 
     await t.commit();
-    res.json({ message: "Đã cập nhật trạng thái đơn hàng!", order });
+    res.json({ message: "Cập nhật thành công!", order });
   } catch (error) {
     await t.rollback();
     console.error(error);
