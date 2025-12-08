@@ -99,6 +99,15 @@ function UserHome() {
           </button>
 
           <button
+            style={{ ...styles.btn, backgroundColor: "#6f42c1" }}
+            onClick={() =>
+              navigate("/computers", { state: { simulationMode: true } })
+            }
+          >
+            🎮 Vào Chơi (Test WinForm)
+          </button>
+
+          <button
             style={{ ...styles.btnPrimary, backgroundColor: "#fd7e14" }}
             onClick={() => navigate("/user/menu")}
           >

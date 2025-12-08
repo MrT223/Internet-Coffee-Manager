@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const GRID_SIZE = 25;
 const CELL_SIZE = 40;
@@ -9,7 +9,10 @@ const CELL_SIZE = 40;
 function ComputerMap() {
   const { token, user, updateUserBalance } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [computers, setComputers] = useState([]);
+
+  const isSimulationMode = location.state?.simulationMode;
 
   const [adminModal, setAdminModal] = useState({ show: false, computer: null });
   const [userModal, setUserModal] = useState({ show: false, computer: null });
@@ -32,90 +35,36 @@ function ComputerMap() {
     fetchComputers();
   }, [fetchComputers]);
 
-  const calculateDuration = (startTime) => {
-    if (!startTime) return "Vừa mới";
-    const start = new Date(startTime);
-    const now = new Date();
-    const diffMs = now - start;
-    const diffMins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    return `${hours} giờ ${mins} phút`;
-  };
+  const handleSimulationClick = async (comp) => {
+    if (comp.status !== "trong" && comp.status !== "dat truoc") {
+      return alert("Chỉ có thể vào máy Trống hoặc máy Đã đặt!");
+    }
 
-  const handleAdminClick = (comp) => {
-    setAdminModal({ show: true, computer: comp });
-  };
+    if (comp.status === "dat truoc" && comp.CurrentUser?.user_id !== user.id) {
+      return alert("Máy này đã được người khác đặt!");
+    }
 
-  const handleAdminAction = async (actionType) => {
-    const comp = adminModal.computer;
-    if (!comp) return;
+    if (
+      !window.confirm(
+        `[GIẢ LẬP] Bạn muốn đăng nhập vào máy ${comp.computer_name}?`
+      )
+    )
+      return;
 
     try {
-      let url = `http://localhost:3636/api/computers/${comp.computer_id}`;
-      let body = {};
-
-      if (actionType === "force_logout") {
-        if (!window.confirm("Bạn chắc chắn muốn ĐUỔI người chơi này?")) return;
-        url += "/force-logout";
-        await axios.post(
-          url,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else if (actionType === "refund") {
-        if (!window.confirm("Hoàn tiền cọc và chuyển máy sang bảo trì?"))
-          return;
-        url += "/refund";
-        await axios.post(
-          url,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else if (actionType === "start_session_test") {
-        const userId = prompt("Nhập ID User (Test):");
-        if (!userId) return;
-        await axios.post(
-          "http://localhost:3636/api/computers/start-session",
-          { computerId: comp.computer_id, userId: userId },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else {
-        if (actionType === "delete") {
-          if (!window.confirm("Xóa máy này khỏi bản đồ?")) return;
-          body = { action: "delete" };
-        } else {
-          body = { status: actionType, action: "update_status" };
-        }
-        await axios.put(url, body, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      alert("Thao tác thành công!");
-      setAdminModal({ show: false, computer: null });
+      const res = await axios.post(
+        "http://localhost:3636/api/computers/start-session",
+        // --- SỬA Ở ĐÂY: user.user_id -> user.id ---
+        { computerId: comp.computer_id, userId: user.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(res.data.message);
+      if (res.data.new_balance !== undefined)
+        updateUserBalance(res.data.new_balance);
       fetchComputers();
+      navigate("/user/home");
     } catch (error) {
-      alert("Lỗi: " + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleEmptyCellClick = async (x, y) => {
-    if (!canManage) return;
-    const name = prompt(`Thêm máy tại [${x},${y}]:`, `Máy ${x}-${y}`);
-    if (name) {
-      try {
-        await axios.post(
-          "http://localhost:3636/api/computers",
-          { x, y, computer_name: name },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        fetchComputers();
-      } catch (e) {
-        alert("Lỗi thêm máy");
-      }
+      alert("Lỗi: " + (error.response?.data?.message || "Lỗi kết nối"));
     }
   };
 
@@ -148,6 +97,72 @@ function ComputerMap() {
     }
   };
 
+  const handleEmptyCellClick = async (x, y) => {
+    if (!canManage) return;
+    const name = prompt(`Thêm máy tại [${x},${y}]:`, `Máy ${x}-${y}`);
+    if (name) {
+      try {
+        await axios.post(
+          "http://localhost:3636/api/computers",
+          { x, y, computer_name: name },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        fetchComputers();
+      } catch (e) {
+        alert("Lỗi thêm máy");
+      }
+    }
+  };
+
+  const handleAdminClick = (comp) => {
+    setAdminModal({ show: true, computer: comp });
+  };
+
+  const handleAdminAction = async (actionType) => {
+    const comp = adminModal.computer;
+    if (!comp) return;
+    try {
+      let url = `http://localhost:3636/api/computers/${comp.computer_id}`;
+      let body = {};
+
+      if (actionType === "force_logout") {
+        if (!window.confirm("ĐUỔI người chơi này?")) return;
+        url += "/force-logout";
+        await axios.post(
+          url,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else if (actionType === "refund") {
+        if (!window.confirm("Hoàn tiền & Hủy?")) return;
+        url += "/refund";
+        await axios.post(
+          url,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        if (actionType === "delete") {
+          if (!window.confirm("Xóa máy?")) return;
+          body = { action: "delete" };
+        } else {
+          body = { status: actionType, action: "update_status" };
+        }
+        await axios.put(url, body, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      alert("Thành công!");
+      setAdminModal({ show: false, computer: null });
+      fetchComputers();
+    } catch (error) {
+      alert("Lỗi: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  // --- RENDER ---
   const computerMap = {};
   computers.forEach((c) => {
     computerMap[`${c.x}-${c.y}`] = c;
@@ -169,13 +184,11 @@ function ComputerMap() {
                 cursor: "pointer",
                 border: "2px solid #555",
               }}
-              onClick={() =>
-                canManage
-                  ? handleAdminClick(comp)
-                  : isUser
-                  ? handleUserClick(comp)
-                  : null
-              }
+              onClick={() => {
+                if (canManage) handleAdminClick(comp);
+                else if (isSimulationMode) handleSimulationClick(comp);
+                else if (isUser) handleUserClick(comp);
+              }}
               title={`${comp.computer_name}`}
             >
               🖥️{" "}
@@ -230,6 +243,7 @@ function ComputerMap() {
       marginBottom: "10px",
       display: "flex",
       justifyContent: "space-between",
+      alignItems: "center",
     },
     backBtn: {
       padding: "8px 15px",
@@ -272,7 +286,6 @@ function ComputerMap() {
       marginRight: 5,
       display: "inline-block",
     }),
-
     modalOverlay: {
       position: "fixed",
       top: 0,
@@ -328,6 +341,17 @@ function ComputerMap() {
     },
   };
 
+  const calculateDuration = (startTime) => {
+    if (!startTime) return "Vừa mới";
+    const start = new Date(startTime);
+    const now = new Date();
+    const diffMs = now - start;
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    return `${hours} giờ ${mins} phút`;
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.topBar}>
@@ -337,9 +361,13 @@ function ComputerMap() {
             navigate(canManage ? "/admin/dashboard" : "/user/home")
           }
         >
-          ⬅ Quay lại
+          ⬅ Quay lại Dashboard
         </button>
-        <h2 style={{ margin: 0 }}>🖥️ Sơ Đồ Máy</h2>
+        <h2 style={{ margin: 0 }}>
+          {isSimulationMode
+            ? "🎮 CHẾ ĐỘ GIẢ LẬP WINFORM"
+            : "🖥️ Sơ Đồ Phòng Máy"}
+        </h2>
         <div style={{ width: 80 }}></div>
       </div>
 
@@ -369,11 +397,9 @@ function ComputerMap() {
             <div style={styles.modalHeader}>
               Quản Lý {adminModal.computer.computer_name}
             </div>
-
             <div style={styles.infoRow}>
               🔹 <b>Trạng thái:</b> {adminModal.computer.status}
             </div>
-
             {(adminModal.computer.status === "co nguoi" ||
               adminModal.computer.status === "dat truoc") && (
               <div
@@ -398,7 +424,6 @@ function ComputerMap() {
                 )}
               </div>
             )}
-
             <div style={styles.btnGroup}>
               {adminModal.computer.status === "co nguoi" ? (
                 <button
@@ -411,20 +436,15 @@ function ComputerMap() {
                   ⛔ Cưỡng chế Đăng Xuất
                 </button>
               ) : adminModal.computer.status === "dat truoc" ? (
-                <>
-                  <button
-                    style={styles.btnAction("#ffc107")}
-                    onClick={() => handleAdminAction("start_session_test")}
-                  >
-                    ▶️ Vào máy (Test)
-                  </button>
-                  <button
-                    style={styles.btnAction("#dc3545")}
-                    onClick={() => handleAdminAction("refund")}
-                  >
-                    💰 Hoàn tiền & Hủy
-                  </button>
-                </>
+                <button
+                  style={{
+                    ...styles.btnAction("#dc3545"),
+                    gridColumn: "span 2",
+                  }}
+                  onClick={() => handleAdminAction("refund")}
+                >
+                  💰 Hoàn tiền & Hủy
+                </button>
               ) : (
                 <>
                   <button
@@ -449,7 +469,7 @@ function ComputerMap() {
                     style={styles.btnAction("#d63384")}
                     onClick={() => handleAdminAction("delete")}
                   >
-                    🗑️ Xóa Máy
+                    🗑️ Xóa
                   </button>
                 </>
               )}

@@ -8,6 +8,7 @@ import ComputerMap from "./components/ComputerMap";
 import MenuManager from "./components/MenuManager";
 import UserMenu from "./components/UserMenu";
 import OrderManager from "./components/OrderManager";
+import ChatWidget from "./components/ChatWidget";
 import "./App.css";
 
 const StaffControl = () => <h2 style={{ padding: 20 }}>🛠️ Trang Nhân Viên</h2>;
@@ -18,6 +19,7 @@ const Unauthorized = () => (
 function App() {
   return (
     <div className="App">
+      <ChatWidget />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />

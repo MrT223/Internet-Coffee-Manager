@@ -88,27 +88,57 @@ export const startSession = async (req, res) => {
 
     if (!computer || !user) {
       await t.rollback();
-      return res.status(404).json({ message: "Lỗi dữ liệu" });
+      return res.status(404).json({ message: "Không tìm thấy Máy hoặc User" });
     }
 
     if (computer.status === "dat truoc") {
+      if (
+        computer.current_user_id &&
+        computer.current_user_id !== user.user_id
+      ) {
+        await t.rollback();
+        return res
+          .status(400)
+          .json({ message: "Máy này đã được người khác đặt!" });
+      }
+
       computer.status = "co nguoi";
       computer.current_user_id = userId;
       computer.session_start_time = new Date();
+
       user.status = "playing";
       user.balance += DEPOSIT;
 
       await computer.save({ transaction: t });
       await user.save({ transaction: t });
-      await t.commit();
 
-      res.json({ message: "Bắt đầu phiên chơi!", new_balance: user.balance });
+      await t.commit();
+      return res.json({
+        message: "Đã đăng nhập vào máy (Hoàn cọc)!",
+        new_balance: user.balance,
+      });
+    } else if (computer.status === "trong") {
+      computer.status = "co nguoi";
+      computer.current_user_id = userId;
+      computer.session_start_time = new Date();
+
+      user.status = "playing";
+
+      await computer.save({ transaction: t });
+      await user.save({ transaction: t });
+
+      await t.commit();
+      return res.json({
+        message: "Đã đăng nhập vào máy thành công!",
+        new_balance: user.balance,
+      });
     } else {
       await t.rollback();
-      res.status(400).json({ message: "Trạng thái máy không hợp lệ." });
+      res.status(400).json({ message: "Máy đang bận hoặc bảo trì." });
     }
   } catch (error) {
     await t.rollback();
+    console.error(error);
     res.status(500).json({ message: "Lỗi bắt đầu phiên." });
   }
 };

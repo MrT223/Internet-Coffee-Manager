@@ -20,7 +20,7 @@ router.post("/:id/book", protect, computerController.bookComputer);
 router.post(
   "/start-session",
   protect,
-  authorize([1, 2]),
+  authorize([1, 2, 3]),
   computerController.startSession
 );
 router.post(
