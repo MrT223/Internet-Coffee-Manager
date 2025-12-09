@@ -46,12 +46,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserStatus = (newStatus) => {
+    if (user) {
+      const updatedUser = { ...user, status: newStatus };
+      setUser(updatedUser);
+      sessionStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
   const contextValue = {
     user,
     token,
     login,
     logout,
     updateUserBalance,
+    updateUserStatus,
     isAuthenticated: !!token,
     isAdmin: user?.role_id === 1,
     isStaff: user?.role_id === 2,

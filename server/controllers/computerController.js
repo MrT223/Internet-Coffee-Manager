@@ -16,7 +16,6 @@ export const getAllComputers = async (req, res) => {
     });
     res.json(computers);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Lỗi lấy dữ liệu máy." });
   }
 };
@@ -40,6 +39,37 @@ export const createComputer = async (req, res) => {
   }
 };
 
+export const updateComputer = async (req, res) => {
+  const { id } = req.params;
+  const { status, action } = req.body;
+
+  try {
+    const comp = await Computer.findByPk(id);
+    if (!comp) return res.status(404).json({ message: "Máy không tồn tại." });
+
+    if (action === "delete") {
+      if (comp.status === "co nguoi")
+        return res
+          .status(400)
+          .json({ message: "Không thể xóa máy đang có người chơi!" });
+      await comp.destroy();
+      return res.json({ message: "Đã xóa máy." });
+    }
+
+    if (status) {
+      if (status === "trong" || status === "bao tri" || status === "khoa") {
+        comp.current_user_id = null;
+        comp.session_start_time = null;
+      }
+      comp.status = status;
+      await comp.save();
+    }
+    res.json({ message: "Cập nhật thành công.", computer: comp });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi cập nhật." });
+  }
+};
+
 export const bookComputer = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.user_id;
@@ -49,8 +79,8 @@ export const bookComputer = async (req, res) => {
     const computer = await Computer.findByPk(id);
     const user = await User.findByPk(userId);
 
-    if (!computer || !user)
-      return res.status(404).json({ message: "Lỗi dữ liệu." });
+    if (!computer)
+      return res.status(404).json({ message: "Máy không tồn tại." });
 
     if (computer.status !== "trong") {
       return res.status(400).json({ message: "Máy không khả dụng." });
@@ -77,6 +107,7 @@ export const bookComputer = async (req, res) => {
   }
 };
 
+// --- HÀM START SESSION (ĐÃ SỬA LỖI SO SÁNH ID) ---
 export const startSession = async (req, res) => {
   const { computerId, userId } = req.body;
   const DEPOSIT = 5000;
@@ -91,11 +122,22 @@ export const startSession = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy Máy hoặc User" });
     }
 
+    const activeSession = await Computer.findOne({
+      where: { current_user_id: userId },
+    });
+
+    if (activeSession && activeSession.computer_id !== parseInt(computerId)) {
+      await t.rollback();
+      return res.status(400).json({
+        message: `Bạn đang ngồi tại máy ${activeSession.computer_name}. Vui lòng đăng xuất máy đó trước!`,
+      });
+    }
+
     if (computer.status === "dat truoc") {
-      if (
-        computer.current_user_id &&
-        computer.current_user_id !== user.user_id
-      ) {
+      const bookerId = parseInt(computer.current_user_id);
+      const enteringUserId = parseInt(user.user_id);
+
+      if (bookerId !== enteringUserId) {
         await t.rollback();
         return res
           .status(400)
@@ -103,9 +145,8 @@ export const startSession = async (req, res) => {
       }
 
       computer.status = "co nguoi";
-      computer.current_user_id = userId;
+      computer.current_user_id = enteringUserId;
       computer.session_start_time = new Date();
-
       user.status = "playing";
       user.balance += DEPOSIT;
 
@@ -114,14 +155,14 @@ export const startSession = async (req, res) => {
 
       await t.commit();
       return res.json({
-        message: "Đã đăng nhập vào máy (Hoàn cọc)!",
+        message: "Đăng nhập thành công! (Hoàn cọc)",
         new_balance: user.balance,
+        new_status: user.status,
       });
     } else if (computer.status === "trong") {
       computer.status = "co nguoi";
       computer.current_user_id = userId;
       computer.session_start_time = new Date();
-
       user.status = "playing";
 
       await computer.save({ transaction: t });
@@ -129,8 +170,9 @@ export const startSession = async (req, res) => {
 
       await t.commit();
       return res.json({
-        message: "Đã đăng nhập vào máy thành công!",
+        message: "Đăng nhập thành công!",
         new_balance: user.balance,
+        new_status: user.status,
       });
     } else {
       await t.rollback();
@@ -204,36 +246,5 @@ export const refundBooking = async (req, res) => {
   } catch (error) {
     await t.rollback();
     res.status(500).json({ message: "Lỗi hoàn tiền." });
-  }
-};
-
-export const updateComputer = async (req, res) => {
-  const { id } = req.params;
-  const { status, action } = req.body;
-
-  try {
-    const comp = await Computer.findByPk(id);
-    if (!comp) return res.status(404).json({ message: "Máy không tồn tại." });
-
-    if (action === "delete") {
-      if (comp.status === "co nguoi")
-        return res
-          .status(400)
-          .json({ message: "Không thể xóa máy đang có người chơi!" });
-      await comp.destroy();
-      return res.json({ message: "Đã xóa máy." });
-    }
-
-    if (status) {
-      if (status === "trong" || status === "bao tri" || status === "khoa") {
-        comp.current_user_id = null;
-        comp.session_start_time = null;
-      }
-      comp.status = status;
-      await comp.save();
-    }
-    res.json({ message: "Cập nhật thành công.", computer: comp });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi cập nhật." });
   }
 };

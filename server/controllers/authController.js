@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Computer from "../models/Computer.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -47,11 +48,23 @@ export const logout = async (req, res) => {
     const user = await User.findByPk(userId);
 
     if (user) {
+      const computer = await Computer.findOne({
+        where: { current_user_id: userId },
+      });
+
+      if (computer) {
+        computer.status = "trong";
+        computer.current_user_id = null;
+        computer.session_start_time = null;
+        await computer.save();
+      }
+
       user.status = "offline";
       await user.save();
     }
-    res.json({ message: "Đăng xuất thành công." });
+    res.json({ message: "Đăng xuất thành công. Đã rời khỏi máy trạm." });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Lỗi đăng xuất." });
   }
 };

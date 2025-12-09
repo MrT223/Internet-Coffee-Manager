@@ -2,7 +2,8 @@ import React, { useEffect, useState, useContext, useRef } from "react";
 import io from "socket.io-client";
 import { AuthContext } from "../context/AuthContext";
 
-const socket = io("http://localhost:3636");
+// Khởi tạo socket (Singleton)
+let socket;
 
 function ChatWidget() {
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -12,74 +13,70 @@ function ChatWidget() {
   const [inputMsg, setInputMsg] = useState("");
 
   const [activeChatId, setActiveChatId] = useState(null);
-  const [userList, setUserList] = useState([]); // Danh sách user bên trái
+  const [userList, setUserList] = useState([]);
 
   const messagesEndRef = useRef(null);
 
-  // --- 1. KẾT NỐI ---
+  const safeId = (id) => String(id);
+
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (!socket || !socket.connected) {
+        socket = io("http://localhost:3636");
+      }
+
       socket.emit("identify", user);
+
+      socket.on("receive_message", (msg) => {
+        setMessages((prev) => {
+          if (prev.some((m) => m.message_id === msg.message_id)) return prev;
+          return [...prev, msg];
+        });
+
+        if (user.role_id !== 3 && msg.conversation_id) {
+          setUserList((prevList) => {
+            const exists = prevList.find(
+              (u) => safeId(u.id) === safeId(msg.conversation_id)
+            );
+
+            if (!exists) {
+              const name =
+                msg.role_id === 3
+                  ? msg.sender_name
+                  : `Khách ${msg.conversation_id}`;
+              return [...prevList, { id: msg.conversation_id, name: name }];
+            }
+            return prevList;
+          });
+        }
+      });
+
+      socket.on("history_loaded", (msgs) => {
+        setMessages(msgs);
+      });
+
+      socket.on("conversations_list", (list) => {
+        setUserList(list);
+      });
 
       if (user.role_id === 3) {
         socket.emit("load_history", { conversation_id: user.id });
       } else {
-        // Nếu là Admin -> Gọi ngay hàm lấy danh sách
         socket.emit("get_conversations");
       }
+
+      return () => {
+        socket.off("receive_message");
+        socket.off("history_loaded");
+        socket.off("conversations_list");
+      };
     }
   }, [isAuthenticated, user]);
 
   useEffect(() => {
-    // Nhận tin nhắn mới
-    socket.on("receive_message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-
-      // Nếu là Admin, khi có tin nhắn mới -> Cập nhật danh sách nếu chưa có
-      if (user && user.role_id !== 3 && msg.conversation_id) {
-        setUserList((prev) => {
-          if (!prev.find((u) => u.id === msg.conversation_id)) {
-            // Tên lấy tạm hoặc fetch lại
-            const name =
-              msg.role_id === 3
-                ? msg.sender_name
-                : `User ${msg.conversation_id}`;
-            return [...prev, { id: msg.conversation_id, name }];
-          }
-          return prev;
-        });
-      }
-    });
-
-    // Nhận lịch sử chat
-    socket.on("history_loaded", (msgs) => {
-      setMessages(msgs);
-    });
-
-    // --- NHẬN DANH SÁCH USER CHAT (MỚI) ---
-    socket.on("conversations_list", (list) => {
-      setUserList(list);
-    });
-
-    // Admin tự động yêu cầu list khi join
-    socket.on("request_conversations", () => {
-      socket.emit("get_conversations");
-    });
-
-    return () => {
-      socket.off("receive_message");
-      socket.off("history_loaded");
-      socket.off("conversations_list");
-      socket.off("request_conversations");
-    };
-  }, [user]);
-
-  // Cuộn xuống cuối
-  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen, activeChatId]);
 
-  // --- GỬI TIN ---
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputMsg.trim()) return;
@@ -87,7 +84,7 @@ function ChatWidget() {
     if (user.role_id === 3) {
       socket.emit("user_send_message", { content: inputMsg });
     } else {
-      if (!activeChatId) return alert("Chọn khách hàng để chat!");
+      if (!activeChatId) return alert("Vui lòng chọn khách hàng để chat!");
       socket.emit("admin_send_message", {
         target_user_id: activeChatId,
         content: inputMsg,
@@ -105,10 +102,9 @@ function ChatWidget() {
   const displayMessages = messages.filter((m) => {
     if (!user) return false;
     if (user.role_id === 3) return true;
-    return m.conversation_id === activeChatId;
+    return safeId(m.conversation_id) === safeId(activeChatId);
   });
 
-  // Styles (Giữ nguyên)
   const styles = {
     widget: {
       position: "fixed",
@@ -149,15 +145,16 @@ function ChatWidget() {
       overflowY: "auto",
     },
     sidebarItem: (active) => ({
-      padding: "10px",
+      padding: "12px",
       cursor: "pointer",
       borderBottom: "1px solid #eee",
       background: active ? "#e2e6ea" : "transparent",
       fontWeight: active ? "bold" : "normal",
+      fontSize: "14px",
     }),
     mainChat: { flex: 1, display: "flex", flexDirection: "column" },
     header: {
-      padding: 10,
+      padding: "12px",
       background: "#007bff",
       color: "#fff",
       fontWeight: "bold",
@@ -165,29 +162,48 @@ function ChatWidget() {
       justifyContent: "space-between",
     },
     msgArea: { flex: 1, padding: 10, overflowY: "auto", background: "#f1f1f1" },
-    inputArea: { padding: 10, borderTop: "1px solid #eee", display: "flex" },
-    input: { flex: 1, padding: 8, borderRadius: 4, border: "1px solid #ccc" },
+    inputArea: {
+      padding: 10,
+      borderTop: "1px solid #eee",
+      display: "flex",
+      background: "#fff",
+    },
+    input: {
+      flex: 1,
+      padding: "8px 12px",
+      borderRadius: 20,
+      border: "1px solid #ccc",
+      outline: "none",
+    },
     sendBtn: {
-      marginLeft: 5,
+      marginLeft: 8,
       padding: "8px 15px",
       background: "#28a745",
       color: "#fff",
       border: "none",
-      borderRadius: 4,
+      borderRadius: 20,
       cursor: "pointer",
+      fontWeight: "bold",
     },
     bubble: (isMe) => ({
-      maxWidth: "70%",
+      maxWidth: "75%",
       padding: "8px 12px",
       borderRadius: 15,
-      marginBottom: 5,
+      marginBottom: 8,
       fontSize: 14,
       alignSelf: isMe ? "flex-end" : "flex-start",
       background: isMe ? "#007bff" : "#fff",
       color: isMe ? "#fff" : "#000",
       border: isMe ? "none" : "1px solid #ddd",
       marginLeft: isMe ? "auto" : 0,
+      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
     }),
+    senderName: {
+      fontSize: 10,
+      color: "#666",
+      marginBottom: 2,
+      fontWeight: "bold",
+    },
   };
 
   if (!isAuthenticated) return null;
@@ -205,7 +221,6 @@ function ChatWidget() {
         </div>
 
         <div style={styles.adminLayout}>
-          {/* SIDEBAR LIST */}
           {user.role_id !== 3 && (
             <div style={styles.sidebar}>
               <div
@@ -214,25 +229,33 @@ function ChatWidget() {
                   fontSize: 12,
                   fontWeight: "bold",
                   color: "#666",
-                  borderBottom: "1px solid #ddd",
+                  background: "#e9ecef",
                 }}
               >
-                DANH SÁCH KHÁCH
+                DANH SÁCH
               </div>
-              {userList.length === 0 ? (
-                <div style={{ padding: 10, fontSize: 12, fontStyle: "italic" }}>
-                  Chưa có ai chat
+              {userList.map((u) => (
+                <div
+                  key={u.id}
+                  style={styles.sidebarItem(
+                    safeId(activeChatId) === safeId(u.id)
+                  )}
+                  onClick={() => selectUserToChat(u.id)}
+                >
+                  👤 {u.name}
                 </div>
-              ) : (
-                userList.map((u) => (
-                  <div
-                    key={u.id}
-                    style={styles.sidebarItem(activeChatId === u.id)}
-                    onClick={() => selectUserToChat(u.id)}
-                  >
-                    👤 {u.name}
-                  </div>
-                ))
+              ))}
+              {userList.length === 0 && (
+                <div
+                  style={{
+                    padding: 10,
+                    fontSize: 13,
+                    fontStyle: "italic",
+                    color: "#999",
+                  }}
+                >
+                  Trống
+                </div>
               )}
             </div>
           )}
@@ -241,27 +264,21 @@ function ChatWidget() {
             <div style={styles.msgArea}>
               {user.role_id !== 3 && !activeChatId ? (
                 <div
-                  style={{ textAlign: "center", marginTop: 100, color: "#888" }}
+                  style={{ textAlign: "center", marginTop: 120, color: "#888" }}
                 >
-                  👈 Chọn khách hàng bên trái để chat
+                  👈 Chọn khách hàng để chat
                 </div>
               ) : (
                 displayMessages.map((msg, idx) => {
-                  const isMe = msg.sender_id === user.id;
+                  const isMe = user && msg.sender_id === user.id;
                   return (
-                    <div key={idx} style={styles.bubble(isMe)}>
-                      {!isMe && (
-                        <div
-                          style={{
-                            fontSize: 10,
-                            fontWeight: "bold",
-                            marginBottom: 2,
-                          }}
-                        >
-                          {msg.sender_name}
-                        </div>
-                      )}
-                      {msg.content}
+                    <div key={idx} style={styles.msgRow}>
+                      <div style={styles.bubble(isMe)}>
+                        {!isMe && (
+                          <div style={styles.senderName}>{msg.sender_name}</div>
+                        )}
+                        {msg.content}
+                      </div>
                     </div>
                   );
                 })

@@ -7,7 +7,8 @@ const GRID_SIZE = 25;
 const CELL_SIZE = 40;
 
 function ComputerMap() {
-  const { token, user, updateUserBalance } = useContext(AuthContext);
+  const { token, user, updateUserBalance, updateUserStatus } =
+    useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [computers, setComputers] = useState([]);
@@ -54,13 +55,14 @@ function ComputerMap() {
     try {
       const res = await axios.post(
         "http://localhost:3636/api/computers/start-session",
-        // --- SỬA Ở ĐÂY: user.user_id -> user.id ---
         { computerId: comp.computer_id, userId: user.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert(res.data.message);
       if (res.data.new_balance !== undefined)
         updateUserBalance(res.data.new_balance);
+      if (res.data.new_status !== undefined)
+        updateUserStatus(res.data.new_status);
       fetchComputers();
       navigate("/user/home");
     } catch (error) {
