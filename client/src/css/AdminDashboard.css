@@ -1,0 +1,189 @@
+/* src/css/AdminDashboard.css */
+:root {
+  --neon-blue: #00f2ff;
+  --neon-pink: #ff0055;
+  --neon-green: #00ff99;
+  --neon-purple: #bc13fe;
+  --dark-bg: #0b1016;
+  --glass-bg: rgba(20, 30, 48, 0.7);
+}
+
+.dashboard-container {
+  min-height: 100vh;
+  padding: 30px;
+  background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
+}
+
+/* --- HEADER --- */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--neon-blue);
+  box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2);
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--neon-blue);
+  text-shadow: 0 0 10px var(--neon-blue);
+}
+
+.nav-buttons button {
+  margin-left: 15px;
+  padding: 10px 20px;
+  border: 1px solid var(--neon-blue);
+  background: rgba(0, 242, 255, 0.1);
+  color: var(--neon-blue);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 5px;
+  text-transform: uppercase;
+}
+
+.nav-buttons button:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.nav-buttons .btn-logout {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  background: rgba(255, 0, 85, 0.1);
+}
+
+.nav-buttons .btn-logout:hover {
+  background: var(--neon-pink);
+  color: #fff;
+  box-shadow: 0 0 15px var(--neon-pink);
+}
+
+/* --- FORM BOX --- */
+.cyber-form-box {
+  background: var(--glass-bg);
+  padding: 25px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.cyber-form-box h3 {
+  margin: 0 20px 0 0;
+  color: var(--neon-green);
+  text-transform: uppercase;
+}
+
+.cyber-input, .cyber-select {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 5px;
+  outline: none;
+  min-width: 200px;
+}
+
+.cyber-input:focus, .cyber-select:focus {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 5px var(--neon-green);
+}
+
+.btn-add {
+  padding: 10px 25px;
+  background: linear-gradient(45deg, #11998e, #38ef7d);
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: 0.3s;
+}
+
+.btn-add:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px #38ef7d;
+}
+
+/* --- TABLE --- */
+.table-responsive {
+  overflow-x: auto;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.cyber-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--glass-bg);
+  backdrop-filter: blur(5px);
+}
+
+.cyber-table th {
+  background: rgba(0, 242, 255, 0.1);
+  color: var(--neon-blue);
+  padding: 15px;
+  text-align: left;
+  border-bottom: 2px solid var(--neon-blue);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.cyber-table td {
+  padding: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ddd;
+}
+
+.cyber-table tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* --- ACTIONS & BADGES --- */
+.role-select {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.status-online { background: rgba(0, 255, 153, 0.2); color: #00ff99; border: 1px solid #00ff99; }
+.status-playing { background: rgba(0, 198, 255, 0.2); color: #00c6ff; border: 1px solid #00c6ff; }
+.status-offline { background: rgba(255, 255, 255, 0.1); color: #aaa; border: 1px solid #555; }
+
+.action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+  transition: 0.2s;
+  color: #fff;
+}
+.btn-topup { background: #6f42c1; box-shadow: 0 0 5px #6f42c1; }
+.btn-topup:hover { background: #8553e0; }
+
+.btn-delete { background: #dc3545; box-shadow: 0 0 5px #dc3545; }
+.btn-delete:hover { background: #ff4d5a; }

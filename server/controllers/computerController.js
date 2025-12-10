@@ -39,34 +39,54 @@ export const createComputer = async (req, res) => {
   }
 };
 
+// --- ĐÃ SỬA: Chỉ dùng để Update thông tin (Tên, Trạng thái) ---
 export const updateComputer = async (req, res) => {
   const { id } = req.params;
-  const { status, action } = req.body;
+  const { status, computer_name } = req.body; // Thêm computer_name để sửa tên
 
   try {
     const comp = await Computer.findByPk(id);
     if (!comp) return res.status(404).json({ message: "Máy không tồn tại." });
 
-    if (action === "delete") {
-      if (comp.status === "co nguoi")
-        return res
-          .status(400)
-          .json({ message: "Không thể xóa máy đang có người chơi!" });
-      await comp.destroy();
-      return res.json({ message: "Đã xóa máy." });
+    // Cập nhật tên nếu có
+    if (computer_name) {
+      comp.computer_name = computer_name;
     }
 
+    // Cập nhật trạng thái nếu có
     if (status) {
       if (status === "trong" || status === "bao tri" || status === "khoa") {
         comp.current_user_id = null;
         comp.session_start_time = null;
       }
       comp.status = status;
-      await comp.save();
     }
+
+    await comp.save();
     res.json({ message: "Cập nhật thành công.", computer: comp });
   } catch (error) {
     res.status(500).json({ message: "Lỗi cập nhật." });
+  }
+};
+
+// --- ĐÃ THÊM MỚI: Hàm Xóa Máy Riêng Biệt ---
+export const deleteComputer = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const comp = await Computer.findByPk(id);
+    if (!comp) {
+      return res.status(404).json({ message: "Máy không tồn tại" });
+    }
+
+    if (comp.status === "co nguoi" || comp.status === "co_nguoi") {
+      return res.status(400).json({ message: "Không thể xóa máy đang có khách!" });
+    }
+
+    await comp.destroy();
+    res.status(200).json({ message: "Đã xóa máy thành công" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi Server khi xóa máy" });
   }
 };
 
@@ -107,7 +127,6 @@ export const bookComputer = async (req, res) => {
   }
 };
 
-// --- HÀM START SESSION (ĐÃ SỬA LỖI SO SÁNH ID) ---
 export const startSession = async (req, res) => {
   const { computerId, userId } = req.body;
   const DEPOSIT = 5000;

@@ -1,0 +1,289 @@
+:root {
+    --color-free: #00ff99;  /* Xanh lá neon - Trống */
+    --color-busy: #ff0055;  /* Đỏ neon - Có người */
+    --color-fix: #ffcc00;   /* Vàng - Bảo trì */
+    --bg-dark: #0b1016;
+}
+
+.map-container {
+    min-height: 100vh;
+    background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* HEADER */
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: rgba(0,0,0,0.5);
+    border-bottom: 1px solid #00f2ff;
+    backdrop-filter: blur(10px);
+}
+
+.brand h1 {
+    margin: 0;
+    color: #00f2ff;
+    text-transform: uppercase;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    display: inline-block;
+    margin-right: 15px;
+}
+
+.live-badge {
+    color: red;
+    font-size: 0.8rem;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink { 50% { opacity: 0.5; } }
+
+.btn-login-nav {
+    padding: 10px 25px;
+    background: transparent;
+    border: 1px solid #00f2ff;
+    color: #00f2ff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    border-radius: 4px;
+}
+
+.btn-login-nav:hover {
+    background: #00f2ff;
+    color: #000;
+    box-shadow: 0 0 15px #00f2ff;
+}
+
+.logged-in-box button {
+    margin-left: 10px;
+    background: #6f42c1;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* LEGEND */
+.status-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; color: #ccc; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot-free { background: var(--color-free); box-shadow: 0 0 5px var(--color-free); }
+.dot-busy { background: var(--color-busy); box-shadow: 0 0 5px var(--color-busy); }
+.dot-fix { background: var(--color-fix); box-shadow: 0 0 5px var(--color-fix); }
+
+/* GRID MÁY */
+.grid-wrapper {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.computer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.computer-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.computer-card:hover {
+    transform: translateY(-5px);
+}
+
+.screen-icon { font-size: 2rem; margin-bottom: 10px; filter: grayscale(100%); }
+.comp-name { font-weight: bold; margin-bottom: 5px; }
+.comp-status { font-size: 0.8rem; }
+
+/* TRẠNG THÁI MÁY */
+/* 1. Máy trống */
+.status-trong { border-color: var(--color-free); }
+.status-trong .screen-icon { filter: grayscale(0); text-shadow: 0 0 10px var(--color-free); }
+.status-trong .comp-name { color: var(--color-free); }
+.status-trong:hover { box-shadow: 0 0 20px rgba(0, 255, 153, 0.3); background: rgba(0, 255, 153, 0.05); }
+
+/* 2. Có người */
+.status-co_nguoi { border-color: var(--color-busy); opacity: 0.8; }
+.status-co_nguoi .comp-name { color: var(--color-busy); }
+.status-co_nguoi:hover { cursor: not-allowed; }
+
+/* 3. Bảo trì */
+.status-bao_tri { border-color: var(--color-fix); opacity: 0.5; }
+.status-bao_tri .comp-name { color: var(--color-fix); }
+
+
+
+/*  THANH CUỘN CHO DANH SÁCH MÁY */
+.grid-wrapper {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    /* Giới hạn chiều cao và bật thanh cuộn dọc */
+    max-height: 75vh; 
+    overflow-y: auto; 
+    /* Tùy chỉnh thanh cuộn  */
+    scrollbar-width: thin; 
+    scrollbar-color: #00f2ff #0b1016;
+}
+
+.grid-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+.grid-wrapper::-webkit-scrollbar-track {
+    background: #0b1016; 
+}
+.grid-wrapper::-webkit-scrollbar-thumb {
+    background-color: #00f2ff; 
+    border-radius: 4px;
+}
+
+/*  STYLE CHO Ô TRỐNG (Dấu +) */
+.empty-cell {
+    width: 100%;
+    height: 100px; 
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    transition: 0.3s;
+}
+
+/* Chỉ hiện hiệu ứng khi Admin rê chuột vào */
+.empty-cell.admin-add {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.empty-cell.admin-add:hover {
+    border-color: #00ff99;
+    color: #00ff99;
+    background: rgba(0, 255, 153, 0.1);
+    box-shadow: 0 0 10px rgba(0, 255, 153, 0.2);
+    transform: scale(0.95);
+}
+
+/* INPUT TRONG MODAL  */
+.modal-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    background: #222;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+.modal-input:focus {
+    border-color: #00f2ff;
+    outline: none;
+}
+
+
+/* MINI POPUP  */
+.mini-popup {
+    position: absolute;
+    z-index: 100;
+    width: 220px;
+    background: rgba(11, 16, 22, 0.95);
+    border: 1px solid #00f2ff;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    backdrop-filter: blur(5px);
+    
+    /* Hiệu ứng hiện ra */
+    animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Tam giác nhỏ trỏ vào máy  */
+.mini-popup::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent #00f2ff transparent transparent;
+}
+
+/* Các phần tử bên trong popup */
+.popup-row {
+    margin-bottom: 8px;
+}
+
+.popup-label {
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 2px;
+    display: block;
+}
+
+.popup-input, .popup-select {
+    width: 100%;
+    background: #1a2332;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 5px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.popup-input:focus, .popup-select:focus {
+    border-color: #00f2ff;
+    outline: none;
+}
+
+.popup-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    border-top: 1px solid #333;
+    padding-top: 8px;
+}
+
+.btn-mini {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-mini.save { background: #00ff99; color: #000; font-weight: bold; }
+.btn-mini.delete { background: transparent; color: #ff0055; border: 1px solid #ff0055; }
+.btn-mini.delete:hover { background: #ff0055; color: white; }
+.btn-mini.close { background: #333; color: #ccc; }
