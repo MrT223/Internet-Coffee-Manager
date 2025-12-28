@@ -10,7 +10,7 @@ const Message = sequelize.define(
       autoIncrement: true,
     },
     conversation_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     sender_id: {
@@ -28,6 +28,10 @@ const Message = sequelize.define(
     content: {
       type: DataTypes.TEXT,
       allowNull: false,
+    },
+    is_read: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
     created_at: {
       type: DataTypes.DATE,

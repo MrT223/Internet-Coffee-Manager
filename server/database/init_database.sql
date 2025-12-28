@@ -169,13 +169,56 @@ CREATE TABLE order_details (
 -- =====================================================
 CREATE TABLE message (
     message_id SERIAL PRIMARY KEY,
-    conversation_id INT NULL,
+    conversation_id VARCHAR(50) NULL,
     sender_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
     sender_name VARCHAR(255) NOT NULL,
     role_id INT DEFAULT 3,
     content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =====================================================
+-- 8. BẢNG TOPUP_TRANSACTION (Giao dịch nạp tiền)
+-- =====================================================
+DROP TABLE IF EXISTS topup_transaction CASCADE;
+CREATE TYPE topup_status AS ENUM ('pending', 'success', 'expired', 'cancelled');
+
+CREATE TABLE topup_transaction (
+    transaction_id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
+    amount INT NOT NULL,
+    transaction_code VARCHAR(20) NOT NULL UNIQUE,
+    status topup_status DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    confirmed_at TIMESTAMP NULL
+);
+
+-- =====================================================
+-- 9. BẢNG PROMOTION (Khuyến mãi & Sự kiện)
+-- =====================================================
+DROP TABLE IF EXISTS promotion CASCADE;
+CREATE TYPE promotion_type AS ENUM ('announcement', 'topup_bonus', 'event');
+
+CREATE TABLE promotion (
+    promotion_id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    type promotion_type DEFAULT 'announcement',
+    bonus_percent INT DEFAULT 0,              -- % bonus cho topup (VD: 20 = +20%)
+    min_amount INT DEFAULT 0,                 -- Số tiền nạp tối thiểu để áp dụng
+    start_date TIMESTAMPTZ NOT NULL,          -- Dùng TIMESTAMPTZ để hỗ trợ timezone
+    end_date TIMESTAMPTZ NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    image_url VARCHAR(500),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Dữ liệu mẫu cho Promotion
+INSERT INTO promotion (title, description, type, bonus_percent, min_amount, start_date, end_date, is_active) VALUES
+('🔥 Nạp 100K nhận 120K', 'Khuyến mãi nạp tiền +20% áp dụng từ 28/12 - 31/12', 'topup_bonus', 20, 100000, '2025-12-28 00:00:00+07', '2025-12-31 23:59:59+07', true),
+('🎄 Sự kiện Giáng Sinh', 'Giảm giá 50% dịch vụ trong tuần lễ Giáng Sinh', 'event', 0, 0, '2025-12-20 00:00:00+07', '2025-12-27 23:59:59+07', false),
+('🛠️ Bảo trì hệ thống', 'Hệ thống sẽ bảo trì từ 2:00 - 4:00 sáng ngày 01/01/2026', 'announcement', 0, 0, '2025-12-30 00:00:00+07', '2026-01-01 04:00:00+07', true);
 
 -- =====================================================
 -- HOÀN TẤT

@@ -141,7 +141,6 @@ const ComputerMap = () => {
         if (!comp) return;
         try {
             let url = `/computers/${comp.computer_id}`;
-            let body = {};
 
             if (actionType === "force_logout") {
                 if (!window.confirm("Bạn chắc chắn muốn ĐUỔI người chơi này?")) return;
@@ -149,14 +148,12 @@ const ComputerMap = () => {
             } else if (actionType === "refund") {
                 if (!window.confirm("Hủy đặt cọc và hoàn tiền?")) return;
                 await axiosClient.post(`${url}/refund`);
+            } else if (actionType === "delete") {
+                if (!window.confirm("Xóa máy khỏi bản đồ?")) return;
+                await axiosClient.delete(url);
             } else {
-                if (actionType === "delete") {
-                    if (!window.confirm("Xóa máy khỏi bản đồ?")) return;
-                    body = { action: "delete" };
-                } else {
-                    body = { status: actionType, action: "update_status" };
-                }
-                await axiosClient.put(url, body);
+                // Update status (trong, bao tri, khoa)
+                await axiosClient.put(url, { status: actionType });
             }
             
             alert("Thao tác thành công!");

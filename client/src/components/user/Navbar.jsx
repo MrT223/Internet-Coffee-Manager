@@ -2,11 +2,13 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useChatNotification } from '@/context/ChatContext';
 import Image from 'next/image';
 import AuthModal from '@/components/auth/AuthModal';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { hasUnread, unreadCount, clearUnread } = useChatNotification() || {};
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -26,6 +28,7 @@ const Navbar = () => {
               <Link href="/" className="hover:text-blue-400 transition-colors">Trang chủ</Link>
               <Link href="/menu" className="hover:text-blue-400 transition-colors">Dịch vụ & Menu</Link>
               <Link href="/booking" className="hover:text-blue-400 transition-colors">Đặt máy</Link>
+
               {user ? (
                 <div className="relative group">
                   <button className="flex items-center space-x-2 focus:outline-none py-2">
@@ -37,6 +40,7 @@ const Navbar = () => {
                   {/* Dropdown User */}
                   <div className="absolute right-0 mt-0 w-48 bg-white text-black rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
                     <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100">Tài khoản</Link>
+                    <Link href="/topup" className="block px-4 py-2 hover:bg-gray-100 text-green-600 font-bold">💳 Nạp tiền</Link>
                     {/* Chỉ hiện trang Admin nếu là admin */}
                     {(user.role_id === 1 || user.role_id === 2) && (
                       <Link href="/admin" className="block px-4 py-2 hover:bg-gray-100 text-blue-600 font-bold">Trang quản lý</Link>
