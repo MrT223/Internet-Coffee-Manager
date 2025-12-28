@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import axiosClient from '@/api/axios';
 import Link from 'next/link';
+import { Monitor, UtensilsCrossed, ClipboardList, MessageCircle, Hand } from 'lucide-react';
 
 export default function UserDashboard() {
     const { user, loading: authLoading } = useAuth();
@@ -39,8 +40,8 @@ export default function UserDashboard() {
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Welcome Card */}
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 shadow-xl">
-                    <h1 className="text-2xl font-bold text-white mb-2">
-                        Xin chào, {user?.name || 'Hội viên'}! 👋
+                    <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                        Xin chào, {user?.name || 'Hội viên'}! <Hand className="w-6 h-6" />
                     </h1>
                     <p className="text-blue-100">Chào mừng bạn đến với CyberOps Gaming Center</p>
                 </div>
@@ -72,20 +73,28 @@ export default function UserDashboard() {
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
                     <h2 className="text-lg font-bold text-white mb-4">Truy cập nhanh</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Link href="/booking" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all">
-                            <div className="text-3xl mb-2">🖥️</div>
+                        <Link href="/booking" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all group">
+                            <div className="flex justify-center mb-2">
+                                <Monitor className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
+                            </div>
                             <div className="text-white font-medium">Đặt Máy</div>
                         </Link>
-                        <Link href="/food" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all">
-                            <div className="text-3xl mb-2">🍔</div>
+                        <Link href="/menu" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all group">
+                            <div className="flex justify-center mb-2">
+                                <UtensilsCrossed className="w-8 h-8 text-orange-400 group-hover:scale-110 transition-transform" />
+                            </div>
                             <div className="text-white font-medium">Gọi Đồ Ăn</div>
                         </Link>
-                        <Link href="/orders" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all">
-                            <div className="text-3xl mb-2">📋</div>
+                        <Link href="/orders" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all group">
+                            <div className="flex justify-center mb-2">
+                                <ClipboardList className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
+                            </div>
                             <div className="text-white font-medium">Lịch Sử Đơn</div>
                         </Link>
-                        <Link href="/support" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all">
-                            <div className="text-3xl mb-2">💬</div>
+                        <Link href="/support" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-4 text-center transition-all group">
+                            <div className="flex justify-center mb-2">
+                                <MessageCircle className="w-8 h-8 text-green-400 group-hover:scale-110 transition-transform" />
+                            </div>
                             <div className="text-white font-medium">Hỗ Trợ</div>
                         </Link>
                     </div>
@@ -125,3 +134,4 @@ export default function UserDashboard() {
         </div>
     );
 }
+

@@ -1,7 +1,16 @@
-import LoginForm from '@/components/auth/LoginForm';
+'use client';
+
+import AuthModal from '@/components/auth/AuthModal';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const handleClose = () => {
+    router.push('/');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
@@ -13,32 +22,9 @@ export default function LoginPage() {
         </div>
       </nav>
 
-      {/* Login Form Container */}
-      <main className="flex-grow flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          <LoginForm />
-          
-          {/* Additional Links */}
-          <div className="mt-6 text-center text-gray-400 text-sm">
-            <p>
-              Chưa có tài khoản?{' '}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium">
-                Đăng ký ngay
-              </Link>
-            </p>
-            <p className="mt-2">
-              <Link href="/" className="text-gray-500 hover:text-gray-300 transition-colors">
-                ← Quay về trang chủ
-              </Link>
-            </p>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="text-center text-gray-500 text-xs py-4">
-        © {new Date().getFullYear()} CyberOps Gaming Center. All rights reserved.
-      </footer>
+      {/* AuthModal hiển thị tự động */}
+      <AuthModal isOpen={true} onClose={handleClose} />
     </div>
   );
 }
+

@@ -43,6 +43,7 @@ export const login = async (req, res) => {
         role_id: user.role_id,
         balance: user.balance,
         status: user.status,
+        avatar: user.avatar,
       },
     });
   } catch (error) {

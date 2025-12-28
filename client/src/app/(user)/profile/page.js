@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import axiosClient from '@/api/axios';
 import { useRouter } from 'next/navigation';
+import AvatarUpload from '@/components/shared/AvatarUpload';
 
 export default function ProfilePage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, updateUserAvatar } = useAuth();
     const [orders, setOrders] = useState([]);
     const [loadingOrders, setLoadingOrders] = useState(true);
     const [activeTab, setActiveTab] = useState('info');
@@ -46,14 +47,16 @@ export default function ProfilePage() {
                     {/* Left: Profile Card */}
                     <div className="md:col-span-1">
                         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-24 relative">
-                                <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
-                                    <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-slate-900 flex items-center justify-center text-2xl font-bold text-white shadow-xl">
-                                        {user.name?.charAt(0).toUpperCase() || 'U'}
-                                    </div>
+                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-28 relative">
+                                <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
+                                    <AvatarUpload 
+                                        currentAvatar={user.avatar}
+                                        userName={user.name}
+                                        size="xl"
+                                    />
                                 </div>
                             </div>
-                            <div className="pt-12 pb-6 px-4 text-center">
+                            <div className="pt-20 pb-6 px-4 text-center">
                                 <h2 className="text-xl font-bold text-white">{user.name}</h2>
                                 <p className="text-sm text-slate-400 uppercase mt-1">
                                     {user.role_id === 1 ? 'Admin' : user.role_id === 2 ? 'Nhân viên' : 'Hội viên'}

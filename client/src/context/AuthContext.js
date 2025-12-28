@@ -67,6 +67,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserAvatar = (newAvatar) => {
+    if (user) {
+      const updatedUser = { ...user, avatar: newAvatar };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
   // Giá trị context
   const contextValue = {
     user,
@@ -74,6 +82,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUserBalance,
+    updateUserAvatar,
     isAuthenticated: !!token,
     isAdmin: user?.role_id === 1,
     isStaff: user?.role_id === 2,

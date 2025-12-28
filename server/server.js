@@ -22,6 +22,7 @@ import menuRoutes from "./routes/menuRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import topupRoutes from "./routes/topupRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 import TopupTransaction from "./models/TopupTransaction.js";
 
 dotenv.config();
@@ -43,6 +44,7 @@ app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/topup", topupRoutes);
 app.use("/api/promotions", promotionRoutes);
+app.use("/api/upload", uploadRoutes);
 
 Role.hasMany(User, { foreignKey: "role_id" });
 User.belongsTo(Role, { foreignKey: "role_id" });
