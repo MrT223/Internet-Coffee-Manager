@@ -93,7 +93,7 @@ export const deleteComputer = async (req, res) => {
 export const bookComputer = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.user_id;
-  const DEPOSIT = 5000;
+  const DEPOSIT = 36000;
 
   try {
     const computer = await Computer.findByPk(id);
@@ -129,7 +129,7 @@ export const bookComputer = async (req, res) => {
 
 export const startSession = async (req, res) => {
   const { computerId, userId } = req.body;
-  const DEPOSIT = 5000;
+  const DEPOSIT = 36000;
   const t = await sequelize.transaction();
 
   try {
@@ -165,7 +165,7 @@ export const startSession = async (req, res) => {
 
       computer.status = "co nguoi";
       computer.current_user_id = enteringUserId;
-      computer.session_start_time = new Date();
+      computer.session_start_time = new Date().toISOString();
       user.status = "playing";
       user.balance += DEPOSIT;
 
@@ -181,7 +181,7 @@ export const startSession = async (req, res) => {
     } else if (computer.status === "trong") {
       computer.status = "co nguoi";
       computer.current_user_id = userId;
-      computer.session_start_time = new Date();
+      computer.session_start_time = new Date().toISOString();
       user.status = "playing";
 
       await computer.save({ transaction: t });
@@ -232,7 +232,7 @@ export const forceLogout = async (req, res) => {
 
 export const refundBooking = async (req, res) => {
   const { id } = req.params;
-  const DEPOSIT = 5000;
+  const DEPOSIT = 36000;
   const t = await sequelize.transaction();
 
   try {
@@ -265,5 +265,155 @@ export const refundBooking = async (req, res) => {
   } catch (error) {
     await t.rollback();
     res.status(500).json({ message: "Lỗi hoàn tiền." });
+  }
+};
+
+// --- Lấy session hiện tại của user ---
+export const getActiveSession = async (req, res) => {
+  const userId = req.user.user_id;
+  const RATE_PER_HOUR = 36000;
+  const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+
+    if (user.status !== "playing") {
+      return res.json({
+        isPlaying: false,
+        status: user.status,
+        balance: user.balance,
+      });
+    }
+
+    // Tìm máy đang chơi
+    const computer = await Computer.findOne({
+      where: { current_user_id: userId },
+    });
+
+    if (!computer) {
+      return res.json({
+        isPlaying: false,
+        status: user.status,
+        balance: user.balance,
+      });
+    }
+
+    // Sử dụng timestamp để tính toán chính xác
+    const now = Date.now();
+    const sessionStartTime = computer.session_start_time
+      ? new Date(computer.session_start_time).getTime()
+      : now;
+    
+    const elapsedMs = Math.max(0, now - sessionStartTime);
+    const elapsedMinutes = elapsedMs / (1000 * 60);
+    const currentCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
+    const effectiveBalance = Math.max(0, user.balance - currentCost);
+    const remainingTimeMs = Math.max(0, (effectiveBalance / RATE_PER_HOUR) * 60 * 60 * 1000);
+
+    res.json({
+      isPlaying: true,
+      status: user.status,
+      balance: user.balance,
+      effectiveBalance,
+      computer: {
+        id: computer.computer_id,
+        name: computer.computer_name,
+      },
+      sessionStartTime: computer.session_start_time,
+      elapsedMs,
+      currentCost,
+      remainingTimeMs,
+      ratePerHour: RATE_PER_HOUR,
+    });
+  } catch (error) {
+    console.error("Lỗi getActiveSession:", error);
+    res.status(500).json({ message: "Lỗi lấy thông tin session." });
+  }
+};
+
+// --- Kết thúc session (logout khỏi máy) ---
+export const endSession = async (req, res) => {
+  const userId = req.user.user_id;
+  const RATE_PER_HOUR = 36000; // 36,000đ/hour = 600đ/phút = 10đ/giây
+  const t = await sequelize.transaction();
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      await t.rollback();
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+
+    if (user.status !== "playing") {
+      await t.rollback();
+      return res.status(400).json({ message: "Bạn không trong phiên chơi nào." });
+    }
+
+    const computer = await Computer.findOne({
+      where: { current_user_id: userId },
+    });
+
+    if (!computer) {
+      await t.rollback();
+      return res.status(400).json({ message: "Không tìm thấy máy đang chơi." });
+    }
+
+    // Tính tiền cần trừ - sử dụng getTime() để đảm bảo tính toán chính xác
+    const now = Date.now(); // Current timestamp in milliseconds
+    const sessionStartTime = computer.session_start_time
+      ? new Date(computer.session_start_time).getTime()
+      : now; // Nếu không có thời gian bắt đầu, coi như vừa bắt đầu
+    
+    const elapsedMs = Math.max(0, now - sessionStartTime);
+    const elapsedMinutes = elapsedMs / (1000 * 60);
+    const elapsedHours = elapsedMinutes / 60;
+    
+    // Tính tiền theo phút (600đ/phút) để chính xác hơn
+    const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
+    const totalCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
+
+    console.log("EndSession Debug:", {
+      userId,
+      computerName: computer.computer_name,
+      sessionStartTime: computer.session_start_time,
+      nowTimestamp: now,
+      startTimestamp: sessionStartTime,
+      elapsedMs,
+      elapsedMinutes: elapsedMinutes.toFixed(2),
+      totalCost,
+      userBalance: user.balance,
+    });
+
+    // Trừ tiền thực sự
+    const newBalance = Math.max(0, user.balance - totalCost);
+    user.balance = newBalance;
+    user.status = "online";
+    await user.save({ transaction: t });
+
+    // Reset máy
+    computer.status = "trong";
+    computer.current_user_id = null;
+    computer.session_start_time = null;
+    await computer.save({ transaction: t });
+
+    await t.commit();
+
+    const elapsedMinsDisplay = Math.floor(elapsedMinutes);
+    const elapsedSecsDisplay = Math.floor((elapsedMinutes % 1) * 60);
+    
+    res.json({
+      message: `Đã kết thúc phiên chơi. Thời gian: ${elapsedMinsDisplay} phút ${elapsedSecsDisplay} giây. Chi phí: ${totalCost.toLocaleString()}đ`,
+      newBalance,
+      totalCost,
+      elapsedMinutes: elapsedMinsDisplay,
+      elapsedSeconds: elapsedSecsDisplay,
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error("Lỗi endSession:", error);
+    res.status(500).json({ message: "Lỗi kết thúc phiên." });
   }
 };

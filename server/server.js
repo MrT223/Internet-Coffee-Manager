@@ -103,11 +103,11 @@ io.on("connection", (socket) => {
     if (user.role_id === 1 || user.role_id === 2) {
       socket.join("room_admin");
       onlineAdmins.set(socket.id, { id: userId, name: userName, role_id: user.role_id });
-      console.log(`[Chat] Admin/Staff ${userName} online (${onlineAdmins.size} admins)`);
+      // Admin online
       broadcastAllAdmins();
     } else {
       socket.join(`room_user_${userId}`);
-      console.log(`[Chat] User ${userName} joined room_user_${userId}`);
+
       // Gửi danh sách tất cả admin cho user mới
       const adminList = await getAllAdminsWithStatus();
       socket.emit("all_admins", adminList);
@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
     if (onlineAdmins.has(socket.id)) {
       const admin = onlineAdmins.get(socket.id);
       onlineAdmins.delete(socket.id);
-      console.log(`[Chat] Admin/Staff ${admin.name} offline (${onlineAdmins.size} admins)`);
+      // Admin offline
       broadcastAllAdmins();
     }
   });
@@ -159,7 +159,7 @@ io.on("connection", (socket) => {
         });
       }
       
-      console.log(`[Chat] Unread count for user ${userId}: ${unreadCount}`);
+
       socket.emit("unread_count", unreadCount);
     } catch (e) {
       console.error("[Chat] Error get_unread_count:", e);
@@ -231,7 +231,7 @@ io.on("connection", (socket) => {
         };
       }
       
-      console.log(`[Chat] Unread details for user ${userId}:`, details);
+
       socket.emit("unread_details", details);
     } catch (e) {
       console.error("[Chat] Error get_unread_details:", e);
@@ -257,7 +257,7 @@ io.on("connection", (socket) => {
         { where: whereCondition }
       );
       
-      console.log(`[Chat] Marked ${updated[0]} messages as read in ${data.conversation_id}`);
+
     } catch (e) {
       console.error("[Chat] Error mark_as_read:", e);
     }
@@ -339,7 +339,7 @@ io.on("connection", (socket) => {
     if (!socket.user) return;
     try {
       const adminId = socket.user.id;
-      console.log(`[Chat] Admin ${adminId} requesting conversations`);
+
       
       // Tìm tất cả conversation có chứa adminId (format: userId_adminId)
       const suffix = `_${adminId}`;
@@ -355,7 +355,7 @@ io.on("connection", (socket) => {
         raw: true,
       });
       
-      console.log(`[Chat] Found ${distinctData.length} conversations for admin ${adminId}:`, distinctData);
+
 
       const conversations = [];
       for (const item of distinctData) {
@@ -375,7 +375,7 @@ io.on("connection", (socket) => {
         }
       }
       
-      console.log(`[Chat] Sending ${conversations.length} conversations to admin`);
+
       socket.emit("conversations_list", conversations);
     } catch (e) {
       console.error("[Chat] Error get_my_conversations:", e);

@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null); // Thông tin session đang chơi
 
   // Load user từ LocalStorage khi component mount (chỉ chạy ở client)
   useEffect(() => {
@@ -51,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       // Xóa state và storage
       setToken(null);
       setUser(null);
+      setSession(null);
       Cookies.remove("token");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -75,18 +77,44 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserStatus = (newStatus) => {
+    if (user) {
+      const updatedUser = { ...user, status: newStatus };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
+  const updateSession = (sessionData) => {
+    setSession(sessionData);
+  };
+
+  const clearSession = () => {
+    setSession(null);
+    if (user) {
+      const updatedUser = { ...user, status: 'online' };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
   // Giá trị context
   const contextValue = {
     user,
     token,
+    session,
     login,
     logout,
     updateUserBalance,
     updateUserAvatar,
+    updateUserStatus,
+    updateSession,
+    clearSession,
     isAuthenticated: !!token,
     isAdmin: user?.role_id === 1,
     isStaff: user?.role_id === 2,
     isUser: user?.role_id === 3,
+    isPlaying: user?.status === 'playing',
     loading
   };
 

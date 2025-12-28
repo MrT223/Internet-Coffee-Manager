@@ -11,6 +11,13 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || "localhost",
     dialect: "postgres",
     logging: false,
+    timezone: "+07:00", // Vietnam timezone (UTC+7)
+    dialectOptions: {
+      useUTC: false, // Không dùng UTC cho đọc
+    },
+    define: {
+      timestamps: true,
+    },
   }
 );
 

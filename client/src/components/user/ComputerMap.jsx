@@ -83,29 +83,45 @@ const ComputerMap = () => {
         } else if (isSimulationMode) {
             handleSimulationLogin(comp);
         } else if (isUser) {
-            if (comp.status !== "trong") {
+            // Cho phép vào máy trống HOẶC máy đã đặt của chính mình
+            const currentUserId = parseInt(user.user_id || user.id);
+            const reservedById = parseInt(comp.CurrentUser?.user_id || comp.current_user_id);
+            const isMyReservation = comp.status === "dat truoc" && reservedById === currentUserId;
+            
+            if (comp.status === "trong") {
+                // Máy trống - hiện modal đặt máy
+                setUserModal({ show: true, computer: comp });
+            } else if (isMyReservation) {
+                // Máy đã đặt của mình - cho phép vào (gọi startSession)
+                handleSimulationLogin(comp);
+            } else {
                 alert("Máy này không khả dụng!");
-                return;
             }
-            setUserModal({ show: true, computer: comp });
         }
     };
 
-    // 3. Giả lập đăng nhập (Simulation)
+    // 3. Giả lập đăng nhập / Vào máy đã đặt
     const handleSimulationLogin = async (comp) => {
+        const currentUserId = parseInt(user.user_id || user.id);
+        const reservedById = parseInt(comp.CurrentUser?.user_id || comp.current_user_id);
+        
         if (comp.status !== "trong" && comp.status !== "dat truoc") {
             return alert("Chỉ có thể vào máy Trống hoặc máy Đã đặt!");
         }
-        if (comp.status === "dat truoc" && comp.CurrentUser?.user_id !== user.user_id) {
+        if (comp.status === "dat truoc" && reservedById !== currentUserId) {
             return alert("Máy này đã được người khác đặt!");
         }
 
-        if (!window.confirm(`[GIẢ LẬP] Bạn muốn ngồi vào máy ${comp.computer_name}?`)) return;
+        const confirmMsg = comp.status === "dat truoc" 
+            ? `Bạn muốn ngồi vào máy ${comp.computer_name} đã đặt trước?`
+            : `[GIẢ LẬP] Bạn muốn ngồi vào máy ${comp.computer_name}?`;
+            
+        if (!window.confirm(confirmMsg)) return;
 
         try {
             const res = await axiosClient.post("/computers/start-session", { 
                 computerId: comp.computer_id, 
-                userId: user.user_id || user.id 
+                userId: currentUserId
             });
             
             alert(res.data.message);
@@ -116,7 +132,7 @@ const ComputerMap = () => {
             fetchComputers();
             router.push("/dashboard");
         } catch (error) {
-            alert(error.response?.data?.message || "Lỗi kết nối giả lập");
+            alert(error.response?.data?.message || "Lỗi kết nối");
         }
     };
 
@@ -332,8 +348,8 @@ const ComputerMap = () => {
                             Bạn muốn đặt trước <span className="text-blue-400 font-bold">{userModal.computer.computer_name}</span>?
                         </p>
                         <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30 mb-6">
-                            <p className="text-sm text-slate-400">Phí đặt cọc giữ chỗ</p>
-                            <p className="text-2xl font-bold text-green-400">5.000 đ</p>
+                            <p className="text-sm text-slate-400">Phí đặt cọc giữ chỗ (hoàn khi ngồi vào máy)</p>
+                            <p className="text-2xl font-bold text-green-400">36.000 đ</p>
                         </div>
                         <div className="flex gap-4">
                             <button 

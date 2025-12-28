@@ -36,4 +36,9 @@ router.delete("/:id", protect, authorize([1, 2]), computerController.deleteCompu
 
 router.put("/:id", protect, authorize([1, 2]), computerController.updateComputer);
 
+// --- Session management routes ---
+router.get("/my-session", protect, computerController.getActiveSession);
+
+router.post("/end-session", protect, computerController.endSession);
+
 export default router;

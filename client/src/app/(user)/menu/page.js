@@ -2,13 +2,17 @@
 import { useState, useEffect } from 'react';
 import axiosClient from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
+import { useGameSession } from '@/context/GameSessionContext';
 import Image from 'next/image';
+import Link from 'next/link';
+import { Monitor, AlertTriangle } from 'lucide-react';
 
 export default function MenuPage() {
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState({}); 
     const { user, updateUserBalance } = useAuth();
+    const { isPlaying } = useGameSession();
 
     useEffect(() => {
         axiosClient.get('/menu')
@@ -18,6 +22,7 @@ export default function MenuPage() {
     }, []);
 
     const addToCart = (item) => {
+        if (!isPlaying) return; // Không cho thêm nếu không đang chơi
         setCart(prev => ({
             ...prev,
             [item.item_id]: (prev[item.item_id] || 0) + 1
@@ -37,6 +42,10 @@ export default function MenuPage() {
     };
 
     const handleCheckout = async () => {
+        if (!isPlaying) {
+            alert('Bạn cần ngồi tại máy để đặt món!');
+            return;
+        }
         if (Object.keys(cart).length === 0) return;
         try {
             const cartItems = Object.entries(cart).map(([id, qty]) => {
@@ -75,14 +84,44 @@ export default function MenuPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 p-6 pb-32">
+        <div className="min-h-screen bg-slate-950 p-6 pb-32 relative">
+            {/* Overlay khi chưa ngồi máy */}
+            {!isPlaying && user && (
+                <div className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-slate-900 border border-orange-500 rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-[0_0_30px_rgba(249,115,22,0.2)]">
+                        <AlertTriangle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-white mb-2">Bạn cần ngồi tại máy!</h2>
+                        <p className="text-slate-400 mb-6">
+                            Để đặt đồ ăn thức uống, bạn cần phải ngồi tại một máy trong phòng game. 
+                            Nhân viên sẽ mang đồ đến tận nơi cho bạn.
+                        </p>
+                        <Link 
+                            href="/booking?mode=simulation" 
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg"
+                        >
+                            <Monitor className="w-5 h-5" />
+                            Chọn máy để chơi (Demo)
+                        </Link>
+                        <div className="mt-4">
+                            <Link href="/booking" className="text-blue-400 text-sm hover:underline">
+                                Hoặc đặt trước máy →
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">
                         🍔 Thực Đơn
                     </h1>
-                    <p className="text-slate-400 mt-1">Chọn món và đặt ngay - phục vụ tận máy!</p>
+                    <p className="text-slate-400 mt-1">
+                        {isPlaying 
+                            ? 'Chọn món và đặt ngay - phục vụ tận máy!' 
+                            : 'Xem trước menu - Cần ngồi tại máy để đặt món'}
+                    </p>
                 </div>
                 
                 {/* Menu Grid */}
@@ -90,7 +129,7 @@ export default function MenuPage() {
                     {menuItems.map(item => {
                         const quantity = cart[item.item_id] || 0;
                         return (
-                            <div key={item.item_id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg hover:shadow-blue-500/10 transition-all group">
+                            <div key={item.item_id} className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg hover:shadow-blue-500/10 transition-all group ${!isPlaying ? 'opacity-75' : ''}`}>
                                 {/* Image */}
                                 <div className="relative h-32 bg-slate-800">
                                     <Image 
@@ -119,7 +158,7 @@ export default function MenuPage() {
                                         <span className="text-green-400 font-bold text-sm font-mono">
                                             {parseInt(item.price).toLocaleString()}đ
                                         </span>
-                                        {item.stock && (
+                                        {item.stock && isPlaying && (
                                             <div className="flex items-center gap-1">
                                                 {quantity > 0 && (
                                                     <button 
@@ -137,6 +176,9 @@ export default function MenuPage() {
                                                 </button>
                                             </div>
                                         )}
+                                        {item.stock && !isPlaying && (
+                                            <span className="text-xs text-slate-500">Xem trước</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -146,7 +188,7 @@ export default function MenuPage() {
             </div>
 
             {/* Floating Cart */}
-            {totalItems > 0 && (
+            {totalItems > 0 && isPlaying && (
                 <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-50">
                     <div className="max-w-4xl mx-auto flex justify-between items-center">
                         <div className="text-white">
