@@ -5,17 +5,10 @@ import * as menuController from "../controllers/menuController.js";
 
 const router = express.Router();
 
-router.get("/", protect, menuController.getMenu);
+router.get("/", menuController.getMenu); 
 
 router.post("/", protect, authorize([1, 2]), menuController.addMenuItem);
-
 router.put("/:id", protect, authorize([1, 2]), menuController.updateMenuItem);
-
-router.delete(
-  "/:id",
-  protect,
-  authorize([1, 2]),
-  menuController.deleteMenuItem
-);
+router.delete("/:id", protect, authorize([1, 2]), menuController.deleteMenuItem);
 
 export default router;

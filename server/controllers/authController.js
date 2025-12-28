@@ -68,3 +68,34 @@ export const logout = async (req, res) => {
     res.status(500).json({ message: "Lỗi đăng xuất." });
   }
 };
+
+export const register = async (req, res) => {
+  const { user_name, password } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ where: { user_name } });
+    if (existingUser) {
+      return res.status(400).json({ message: "Tên tài khoản đã tồn tại." });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await User.create({
+      user_name,
+      password: hashedPassword,
+      role_id: 3, 
+      balance: 0,
+      status: "offline",
+    });
+
+    res.status(201).json({ 
+      message: "Đăng ký thành công! Vui lòng đăng nhập.",
+      user_id: newUser.user_id 
+    });
+
+  } catch (error) {
+    console.error("Register error:", error);
+    res.status(500).json({ message: "Lỗi Server khi đăng ký." });
+  }
+};

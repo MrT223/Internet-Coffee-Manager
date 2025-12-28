@@ -1,8 +1,8 @@
-'use client'; // Bắt buộc đối với Context trong Next.js App Router
+'use client';
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
-import Cookies from "js-cookie"; // Khuyên dùng cookie để đồng bộ tốt hơn
+import Cookies from "js-cookie"; 
 
 // 1. Tạo Context
 const AuthContext = createContext(null);
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       // Điều hướng về login
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 
@@ -88,7 +88,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// 3. Export Hook useAuth (Đây là cái mà Navbar đang thiếu)
 export const useAuth = () => {
   return useContext(AuthContext);
 };

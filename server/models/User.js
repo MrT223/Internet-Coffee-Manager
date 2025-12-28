@@ -34,6 +34,10 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: "offline",
     },
+    // avatar: {
+    //   type: DataTypes.STRING,
+    //   allowNull: true,
+    // },
   },
   {
     tableName: "User",

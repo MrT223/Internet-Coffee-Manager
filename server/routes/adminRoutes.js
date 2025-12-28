@@ -17,4 +17,5 @@ router.put("/users/:id/topup", adminController.topUpBalance);
 
 router.put("/users/:id/role", adminController.changeUserRole);
 
+router.get("/stats", protect, authorize([1, 2]), adminController.getDashboardStats);
 export default router;

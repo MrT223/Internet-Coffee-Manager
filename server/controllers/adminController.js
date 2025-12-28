@@ -102,3 +102,33 @@ export const changeUserRole = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi đổi quyền." });
   }
 };
+
+export const getDashboardStats = async (req, res) => {
+  try {
+    const revenueData = await FoodOrder.sum('total_amount', {
+      where: { status: 'completed' }
+    });
+
+    const activeComputers = await Computer.count({
+      where: { status: 'co nguoi' }
+    });
+
+    const pendingOrders = await FoodOrder.count({
+      where: { status: 'pending' }
+    });
+
+    const totalUsers = await User.count({
+      where: { role_id: 3 }
+    });
+
+    res.json({
+      revenue: revenueData || 0,
+      activeComputers,
+      pendingOrders,
+      totalUsers
+    });
+  } catch (error) {
+    console.error("Stats Error:", error);
+    res.status(500).json({ message: "Lỗi lấy thống kê" });
+  }
+};
