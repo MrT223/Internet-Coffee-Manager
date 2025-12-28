@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axiosClient from '@/api/axios';
+import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
 
 export default function EditMenuPage() {
     const { id } = useParams();
     const router = useRouter();
+    const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -30,7 +32,7 @@ export default function EditMenuPage() {
                         stock: item.stock
                     });
                 } else {
-                    alert('Không tìm thấy món ăn!');
+                    toast.error('Không tìm thấy món ăn!');
                     router.push('/admin/menu');
                 }
             } catch (error) {
@@ -47,10 +49,10 @@ export default function EditMenuPage() {
         setSaving(true);
         try {
             await axiosClient.put(`/menu/${id}`, formData);
-            alert('Cập nhật thành công!');
+            toast.success('Cập nhật thành công!');
             router.push('/admin/menu');
         } catch (error) {
-            alert('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi cập nhật: ' + (error.response?.data?.message || error.message));
         } finally {
             setSaving(false);
         }

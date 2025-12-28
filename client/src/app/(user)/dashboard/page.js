@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGameSession } from '@/context/GameSessionContext';
+import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import axiosClient from '@/api/axios';
 import Link from 'next/link';
 import { Monitor, UtensilsCrossed, ClipboardList, MessageCircle, Hand, Gamepad2, Clock, Wallet, Power } from 'lucide-react';
@@ -17,6 +19,8 @@ export default function UserDashboard() {
         endSession,
         fetchSession
     } = useGameSession();
+    const { toast } = useToast();
+    const { confirm } = useConfirm();
     
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -40,16 +44,23 @@ export default function UserDashboard() {
     };
 
     const handleEndSession = async () => {
-        if (!window.confirm('Bạn có chắc muốn kết thúc phiên chơi?')) return;
+        const confirmed = await confirm({
+            title: 'Kết thúc phiên chơi?',
+            message: 'Hệ thống sẽ tính tiền theo thời gian bạn đã chơi.',
+            type: 'warning',
+            confirmText: 'Kết thúc',
+            cancelText: 'Tiếp tục chơi',
+        });
+        if (!confirmed) return;
         
         const result = await endSession();
         if (result.success) {
-            alert(result.message);
+            toast.success(result.message);
             if (result.newBalance !== undefined) {
                 updateUserBalance(result.newBalance);
             }
         } else {
-            alert(result.message);
+            toast.error(result.message);
         }
     };
 

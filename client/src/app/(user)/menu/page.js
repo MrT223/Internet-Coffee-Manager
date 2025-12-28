@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import axiosClient from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { useGameSession } from '@/context/GameSessionContext';
+import { useToast } from '@/context/ToastContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Monitor, AlertTriangle } from 'lucide-react';
@@ -13,6 +14,7 @@ export default function MenuPage() {
     const [cart, setCart] = useState({}); 
     const { user, updateUserBalance } = useAuth();
     const { isPlaying } = useGameSession();
+    const { toast } = useToast();
 
     useEffect(() => {
         axiosClient.get('/menu')
@@ -43,7 +45,7 @@ export default function MenuPage() {
 
     const handleCheckout = async () => {
         if (!isPlaying) {
-            alert('Bạn cần ngồi tại máy để đặt món!');
+            toast.warning('Bạn cần ngồi tại máy để đặt món!');
             return;
         }
         if (Object.keys(cart).length === 0) return;
@@ -58,13 +60,13 @@ export default function MenuPage() {
             });
 
             const res = await axiosClient.post('/orders', { cart: cartItems });
-            alert("Đặt món thành công! Bếp đang chuẩn bị.");
+            toast.success("Đặt món thành công! Bếp đang chuẩn bị.");
             if (res.data.newBalance !== undefined) {
                 updateUserBalance(res.data.newBalance);
             }
             setCart({});
         } catch (error) {
-            alert("Đặt món thất bại. " + (error.response?.data?.message || ""));
+            toast.error(error.response?.data?.message || "Đặt món thất bại");
         }
     };
 

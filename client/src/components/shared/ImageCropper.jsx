@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { X, ZoomIn, ZoomOut, RotateCw, Check, Upload } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 
 // Helper function to create cropped image
 const createImage = (url) =>
@@ -65,6 +66,7 @@ export default function ImageCropper({
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
 
   const onCropChange = useCallback((crop) => {
     setCrop(crop);
@@ -92,7 +94,7 @@ export default function ImageCropper({
       onClose();
     } catch (error) {
       console.error('Error cropping image:', error);
-      alert('Lỗi khi cắt ảnh. Vui lòng thử lại!');
+      toast.error('Lỗi khi cắt ảnh. Vui lòng thử lại!');
     } finally {
       setIsProcessing(false);
     }

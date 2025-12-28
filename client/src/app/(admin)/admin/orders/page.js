@@ -2,9 +2,13 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function OrdersPage() {
     const { loading: authLoading, isAuthenticated } = useAuth();
+    const { toast } = useToast();
+    const { confirm } = useConfirm();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
@@ -31,7 +35,7 @@ export default function OrdersPage() {
             await axiosClient.put(`/orders/${id}`, { status: newStatus });
             fetchOrders();
         } catch (error) {
-            alert("Cập nhật thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Cập nhật thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
@@ -144,8 +148,15 @@ export default function OrdersPage() {
                                                         ✓
                                                     </button>
                                                     <button 
-                                                        onClick={() => {
-                                                            if(confirm('Hủy đơn này? Tiền sẽ được hoàn lại cho khách.')) {
+                                                        onClick={async () => {
+                                                            const confirmed = await confirm({
+                                                                title: 'Hủy đơn hàng?',
+                                                                message: 'Tiền sẽ được hoàn lại cho khách.',
+                                                                type: 'warning',
+                                                                confirmText: 'Hủy đơn',
+                                                                cancelText: 'Không',
+                                                            });
+                                                            if (confirmed) {
                                                                 updateStatus(order.bill_id, 'cancelled');
                                                             }
                                                         }}

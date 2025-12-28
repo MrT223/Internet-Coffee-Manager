@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import Cropper from 'react-easy-crop';
 import axiosClient from '@/api/axios';
@@ -102,6 +103,7 @@ const getCroppedPreview = async (imageSrc, pixelCrop, rotation = 0) => {
 
 export default function AvatarEditPage() {
   const { user, updateUserAvatar, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const fileInputRef = useRef(null);
 
@@ -142,12 +144,12 @@ export default function AvatarEditPage() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn file ảnh!');
+      toast.warning('Vui lòng chọn file ảnh!');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Ảnh không được quá 10MB!');
+      toast.warning('Ảnh không được quá 10MB!');
       return;
     }
 
@@ -187,7 +189,7 @@ export default function AvatarEditPage() {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Lỗi upload ảnh. Vui lòng thử lại!');
+      toast.error('Lỗi upload ảnh. Vui lòng thử lại!');
     } finally {
       setIsUploading(false);
     }

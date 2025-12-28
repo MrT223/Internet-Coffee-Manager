@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react';
 import axiosClient from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 
 export default function UsersPage() {
     const { loading: authLoading, isAuthenticated, user: currentUser } = useAuth();
+    const { toast } = useToast();
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -34,71 +36,80 @@ export default function UsersPage() {
 
     // === HANDLERS ===
     const handleTopUp = async () => {
-        if (!topUpModal.amount || parseInt(topUpModal.amount) <= 0) return alert("Số tiền không hợp lệ");
+        if (!topUpModal.amount || parseInt(topUpModal.amount) <= 0) {
+            toast.warning("Số tiền không hợp lệ");
+            return;
+        }
         try {
             await axiosClient.put(`/admin/users/${topUpModal.user.user_id}/topup`, { amount: parseInt(topUpModal.amount) });
-            alert(`Đã nạp ${parseInt(topUpModal.amount).toLocaleString()}đ cho ${topUpModal.user.user_name}`);
+            toast.success(`Đã nạp ${parseInt(topUpModal.amount).toLocaleString()}đ cho ${topUpModal.user.user_name}`);
             setTopUpModal({ show: false, user: null, amount: '' });
             fetchUsers();
         } catch (error) {
-            alert("Nạp tiền thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Nạp tiền thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
     const handleCreateUser = async () => {
-        if (!createModal.user_name || !createModal.password) return alert("Vui lòng nhập đầy đủ thông tin");
-        if (createModal.password.length < 6) return alert("Mật khẩu phải có ít nhất 6 ký tự");
+        if (!createModal.user_name || !createModal.password) {
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
+            return;
+        }
+        if (createModal.password.length < 6) {
+            toast.warning("Mật khẩu phải có ít nhất 6 ký tự");
+            return;
+        }
         try {
             await axiosClient.post('/admin/users', {
                 user_name: createModal.user_name,
                 password: createModal.password,
                 role_id: parseInt(createModal.role_id)
             });
-            alert(`Đã tạo tài khoản ${createModal.user_name} thành công!`);
+            toast.success(`Đã tạo tài khoản ${createModal.user_name} thành công!`);
             setCreateModal({ show: false, user_name: '', password: '', role_id: 3 });
             fetchUsers();
         } catch (error) {
-            alert("Tạo tài khoản thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Tạo tài khoản thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
     const handleChangeRole = async () => {
         try {
             await axiosClient.put(`/admin/users/${roleModal.user.user_id}/role`, { role_id: parseInt(roleModal.role_id) });
-            alert(`Đã đổi vai trò cho ${roleModal.user.user_name} thành công!`);
+            toast.success(`Đã đổi vai trò cho ${roleModal.user.user_name} thành công!`);
             setRoleModal({ show: false, user: null, role_id: 3 });
             fetchUsers();
         } catch (error) {
-            alert("Đổi vai trò thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Đổi vai trò thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
     const handleToggleLock = async (user) => {
         try {
             const res = await axiosClient.put(`/admin/users/${user.user_id}/lock`);
-            alert(res.data.message);
+            toast.success(res.data.message);
             fetchUsers();
         } catch (error) {
-            alert("Thao tác thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Thao tác thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
     const handleResetPassword = async (user) => {
         try {
             const res = await axiosClient.put(`/admin/users/${user.user_id}/reset-password`);
-            alert(res.data.message);
+            toast.success(res.data.message);
         } catch (error) {
-            alert("Reset mật khẩu thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Reset mật khẩu thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
     const handleDeleteUser = async (user) => {
         try {
             await axiosClient.delete(`/admin/users/${user.user_id}`);
-            alert(`Đã xóa tài khoản ${user.user_name}`);
+            toast.success(`Đã xóa tài khoản ${user.user_name}`);
             fetchUsers();
         } catch (error) {
-            alert("Xóa tài khoản thất bại: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Xóa tài khoản thất bại: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 

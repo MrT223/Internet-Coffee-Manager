@@ -4,9 +4,13 @@ import axiosClient from '@/api/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 export default function AdminMenuPage() {
     const { loading: authLoading, isAuthenticated } = useAuth();
+    const { toast } = useToast();
+    const { confirm } = useConfirm();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,22 +31,32 @@ export default function AdminMenuPage() {
         }
     }, [authLoading, isAuthenticated]);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Bạn chắc chắn muốn xóa món này?")) return;
+    const handleDelete = async (id, name) => {
+        const confirmed = await confirm({
+            title: 'Xóa món ăn?',
+            message: `Món "${name}" sẽ bị xóa vĩnh viễn.`,
+            type: 'danger',
+            confirmText: 'Xóa',
+            cancelText: 'Hủy',
+        });
+        if (!confirmed) return;
+        
         try {
             await axiosClient.delete(`/menu/${id}`);
+            toast.success(`Đã xóa món "${name}"`);
             fetchMenu();
         } catch (error) {
-            alert("Lỗi khi xóa món: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Lỗi khi xóa món: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
     const toggleStock = async (item) => {
         try {
             await axiosClient.put(`/menu/${item.item_id}`, { stock: !item.stock });
+            toast.success(item.stock ? `${item.food_name} đã hết hàng` : `${item.food_name} đã có hàng`);
             fetchMenu();
         } catch (error) {
-            alert("Lỗi cập nhật: " + (error.response?.data?.message || "Lỗi server"));
+            toast.error("Lỗi cập nhật: " + (error.response?.data?.message || "Lỗi server"));
         }
     };
 
@@ -110,7 +124,7 @@ export default function AdminMenuPage() {
                                         ✏️ Sửa
                                     </Link>
                                     <button 
-                                        onClick={() => handleDelete(item.item_id)}
+                                        onClick={() => handleDelete(item.item_id, item.food_name)}
                                         className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-sm font-bold transition-all"
                                     >
                                         🗑️ Xóa

@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaGift, FaBullhorn, FaCalendarAlt } from 'react-icons/fa';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3636/api';
@@ -34,6 +36,8 @@ const typeLabels = {
 export default function PromotionsPage() {
     const [promotions, setPromotions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
+    const { confirm } = useConfirm();
     const [showModal, setShowModal] = useState(false);
     const [editingPromotion, setEditingPromotion] = useState(null);
     const [filter, setFilter] = useState('all'); // all, active, expired
@@ -118,12 +122,19 @@ export default function PromotionsPage() {
             fetchPromotions();
         } catch (err) {
             console.error('Error saving promotion:', err);
-            alert('Lỗi khi lưu khuyến mãi');
+            toast.error('Lỗi khi lưu khuyến mãi');
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Bạn có chắc muốn xóa khuyến mãi này?')) return;
+        const confirmed = await confirm({
+            title: 'Xác nhận xóa',
+            message: 'Bạn có chắc muốn xóa khuyến mãi này?',
+            type: 'danger',
+            confirmText: 'Xóa',
+            cancelText: 'Hủy',
+        });
+        if (!confirmed) return;
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${API_URL}/promotions/${id}`, {

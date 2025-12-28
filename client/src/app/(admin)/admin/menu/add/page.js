@@ -2,10 +2,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axiosClient from '@/api/axios';
+import { useToast } from '@/context/ToastContext';
 import Link from 'next/link';
 
 export default function AddMenuPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         food_name: '',
@@ -22,10 +24,10 @@ export default function AddMenuPage() {
         setLoading(true);
         try {
             await axiosClient.post('/menu', formData);
-            alert('Thêm món thành công!');
+            toast.success('Thêm món thành công!');
             router.push('/admin/menu');
         } catch (error) {
-            alert('Lỗi: ' + (error.response?.data?.message || error.message));
+            toast.error('Lỗi: ' + (error.response?.data?.message || error.message));
         } finally {
             setLoading(false);
         }

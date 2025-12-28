@@ -1,6 +1,9 @@
 'use client';
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { useConfirm } from "@/context/ConfirmContext";
+import { usePrompt } from "@/context/PromptContext";
 import axiosClient from '@/api/axios';
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -19,6 +22,9 @@ const UserIcon = ({ className }) => (
 
 const ComputerMap = () => {
     const { user, updateUserBalance, updateUserStatus } = useAuth();
+    const { toast } = useToast();
+    const { confirm } = useConfirm();
+    const { prompt } = usePrompt();
     const router = useRouter();
     const searchParams = useSearchParams();
     
@@ -64,14 +70,19 @@ const ComputerMap = () => {
     const handleEmptyCellClick = async (x, y) => {
         if (!canManage) return;
         
-        const name = prompt(`Thêm máy mới tại vị trí [${x},${y}]?`, `MAY-${x}-${y}`);
+        const name = await prompt({
+            title: 'Thêm máy mới',
+            message: `Thêm máy tại vị trí [${x}, ${y}]`,
+            placeholder: 'Nhập tên máy...',
+            defaultValue: `MAY-${x}-${y}`,
+        });
         if (name) {
             try {
                 await axiosClient.post("/computers", { x, y, computer_name: name });
-                alert(`Đã thêm máy ${name}`);
+                toast.success(`Đã thêm máy ${name}`);
                 fetchComputers();
             } catch (e) {
-                alert("Lỗi khi thêm máy mới: " + (e.response?.data?.message || e.message));
+                toast.error("Lỗi khi thêm máy: " + (e.response?.data?.message || e.message));
             }
         }
     };
@@ -95,7 +106,7 @@ const ComputerMap = () => {
                 // Máy đã đặt của mình - cho phép vào (gọi startSession)
                 handleSimulationLogin(comp);
             } else {
-                alert("Máy này không khả dụng!");
+                toast.warning("Máy này không khả dụng!");
             }
         }
     };
@@ -106,17 +117,20 @@ const ComputerMap = () => {
         const reservedById = parseInt(comp.CurrentUser?.user_id || comp.current_user_id);
         
         if (comp.status !== "trong" && comp.status !== "dat truoc") {
-            return alert("Chỉ có thể vào máy Trống hoặc máy Đã đặt!");
+            return toast.warning("Chỉ có thể vào máy Trống hoặc máy Đã đặt!");
         }
         if (comp.status === "dat truoc" && reservedById !== currentUserId) {
-            return alert("Máy này đã được người khác đặt!");
+            return toast.error("Máy này đã được người khác đặt!");
         }
 
-        const confirmMsg = comp.status === "dat truoc" 
-            ? `Bạn muốn ngồi vào máy ${comp.computer_name} đã đặt trước?`
-            : `[GIẢ LẬP] Bạn muốn ngồi vào máy ${comp.computer_name}?`;
-            
-        if (!window.confirm(confirmMsg)) return;
+        const confirmed = await confirm({
+            title: comp.status === "dat truoc" ? 'Vào máy đã đặt?' : 'Bắt đầu phiên chơi?',
+            message: `Bạn muốn ngồi vào máy ${comp.computer_name}?`,
+            type: 'default',
+            confirmText: 'Vào máy',
+            cancelText: 'Hủy',
+        });
+        if (!confirmed) return;
 
         try {
             const res = await axiosClient.post("/computers/start-session", { 
@@ -124,7 +138,7 @@ const ComputerMap = () => {
                 userId: currentUserId
             });
             
-            alert(res.data.message);
+            toast.success(res.data.message);
             
             if (res.data.new_balance !== undefined) updateUserBalance(res.data.new_balance);
             if (res.data.new_status !== undefined) updateUserStatus(res.data.new_status);
@@ -132,7 +146,7 @@ const ComputerMap = () => {
             fetchComputers();
             router.push("/dashboard");
         } catch (error) {
-            alert(error.response?.data?.message || "Lỗi kết nối");
+            toast.error(error.response?.data?.message || "Lỗi kết nối");
         }
     };
 
@@ -141,12 +155,12 @@ const ComputerMap = () => {
         const comp = userModal.computer;
         try {
             const res = await axiosClient.post(`/computers/${comp.computer_id}/book`);
-            alert(res.data.message);
+            toast.success(res.data.message);
             if (res.data.newBalance !== undefined) updateUserBalance(res.data.newBalance);
             setUserModal({ show: false, computer: null });
             fetchComputers();
         } catch (error) {
-            alert(error.response?.data?.message || "Đặt máy thất bại");
+            toast.error(error.response?.data?.message || "Đặt máy thất bại");
             setUserModal({ show: false, computer: null });
         }
     };
@@ -155,28 +169,42 @@ const ComputerMap = () => {
     const handleAdminAction = async (actionType) => {
         const comp = adminModal.computer;
         if (!comp) return;
+
+        // Các action cần xác nhận
+        if (actionType === "force_logout" || actionType === "refund" || actionType === "delete") {
+            const confirmOptions = {
+                force_logout: { title: 'Đuổi người chơi?', message: 'Người chơi sẽ bị đăng xuất khỏi máy này.', type: 'danger' },
+                refund: { title: 'Hoàn tiền đặt cọc?', message: 'Hủy đặt cọc và hoàn tiền cho khách.', type: 'warning' },
+                delete: { title: 'Xóa máy?', message: 'Máy sẽ bị xóa khỏi bản đồ.', type: 'danger' },
+            };
+            
+            const confirmed = await confirm({
+                ...confirmOptions[actionType],
+                confirmText: 'Xác nhận',
+                cancelText: 'Hủy',
+            });
+            if (!confirmed) return;
+        }
+
         try {
             let url = `/computers/${comp.computer_id}`;
 
             if (actionType === "force_logout") {
-                if (!window.confirm("Bạn chắc chắn muốn ĐUỔI người chơi này?")) return;
                 await axiosClient.post(`${url}/force-logout`);
             } else if (actionType === "refund") {
-                if (!window.confirm("Hủy đặt cọc và hoàn tiền?")) return;
                 await axiosClient.post(`${url}/refund`);
             } else if (actionType === "delete") {
-                if (!window.confirm("Xóa máy khỏi bản đồ?")) return;
                 await axiosClient.delete(url);
             } else {
                 // Update status (trong, bao tri, khoa)
                 await axiosClient.put(url, { status: actionType });
             }
             
-            alert("Thao tác thành công!");
+            toast.success("Thao tác thành công!");
             setAdminModal({ show: false, computer: null });
             fetchComputers();
         } catch (error) {
-            alert(error.response?.data?.message || "Lỗi thao tác Admin");
+            toast.error(error.response?.data?.message || "Lỗi thao tác Admin");
         }
     };
 

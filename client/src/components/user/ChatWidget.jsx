@@ -179,7 +179,7 @@ const ChatWidget = ({ user: propUser }) => {
     const now = Date.now();
     
     if (isUser) {
-      if (!selectedAdminId) return alert("Vui lòng chọn nhân viên!");
+      if (!selectedAdminId) return toast.warning("Vui lòng chọn nhân viên!");
       socketRef.current.emit("user_send_message", { 
         content: inputMsg,
         target_admin_id: selectedAdminId 
@@ -191,7 +191,7 @@ const ChatWidget = ({ user: propUser }) => {
         return newMap;
       });
     } else if (isAdmin) {
-      if (!activeChatId) return alert("Vui lòng chọn khách hàng!");
+      if (!activeChatId) return toast.warning("Vui lòng chọn khách hàng!");
       socketRef.current.emit("admin_send_message", {
         conversation_id: activeChatId,
         content: inputMsg,

@@ -2,6 +2,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext"; 
 import { ChatProvider } from "@/context/ChatContext"; 
+import { ToastProvider } from "@/context/ToastContext";
+import { ConfirmProvider } from "@/context/ConfirmContext";
+import { PromptProvider } from "@/context/PromptContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +19,13 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <AuthProvider>
           <ChatProvider>
-            {children}
+            <ToastProvider>
+              <ConfirmProvider>
+                <PromptProvider>
+                  {children}
+                </PromptProvider>
+              </ConfirmProvider>
+            </ToastProvider>
           </ChatProvider>
         </AuthProvider>
       </body>

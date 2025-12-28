@@ -2,7 +2,10 @@ import FoodOrder from "../models/FoodOrder.js";
 import OrderDetail from "../models/OrderDetail.js";
 import MenuItem from "../models/MenuItem.js";
 import User from "../models/User.js";
+import Computer from "../models/Computer.js";
 import sequelize from "../config/database.js";
+
+const RATE_PER_HOUR = 36000; // 36,000đ/hour
 
 export const placeOrder = async (req, res) => {
   const userId = req.user.user_id;
@@ -21,9 +24,34 @@ export const placeOrder = async (req, res) => {
     });
 
     const user = await User.findByPk(userId);
-    if (user.balance < totalAmount) {
+    
+    // Tính số dư hiệu lực nếu đang trong phiên chơi
+    let effectiveBalance = user.balance;
+    
+    if (user.status === "playing") {
+      // Tìm máy đang chơi để tính thời gian
+      const computer = await Computer.findOne({
+        where: { current_user_id: userId },
+      });
+      
+      if (computer && computer.session_start_time) {
+        const now = Date.now();
+        const sessionStartTime = new Date(computer.session_start_time).getTime();
+        const elapsedMs = Math.max(0, now - sessionStartTime);
+        const elapsedMinutes = elapsedMs / (1000 * 60);
+        const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
+        const currentSessionCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
+        
+        effectiveBalance = user.balance - currentSessionCost;
+      }
+    }
+    
+    // Kiểm tra số dư HIỆU LỰC có đủ không
+    if (effectiveBalance < totalAmount) {
       await t.rollback();
-      return res.status(400).json({ message: "Số dư không đủ để thanh toán." });
+      return res.status(400).json({ 
+        message: `Số dư không đủ. Số dư hiệu lực: ${Math.floor(effectiveBalance).toLocaleString()}đ, cần: ${totalAmount.toLocaleString()}đ` 
+      });
     }
 
     user.balance -= totalAmount;

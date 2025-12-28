@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import axiosClient from '@/api/axios';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -16,6 +17,7 @@ const AMOUNTS = [
 
 export default function TopupPage() {
     const { user, loading: authLoading, updateUserBalance } = useAuth();
+    const { toast } = useToast();
     const router = useRouter();
     
     const [selectedAmount, setSelectedAmount] = useState(null);
@@ -71,13 +73,16 @@ export default function TopupPage() {
     };
 
     const handleCreateTopup = async () => {
-        if (!selectedAmount) return alert('Vui lòng chọn mệnh giá!');
+        if (!selectedAmount) {
+            toast.warning('Vui lòng chọn mệnh giá!');
+            return;
+        }
         setLoading(true);
         try {
             const res = await axiosClient.post('/topup/create', { amount: selectedAmount });
             setCurrentTx(res.data);
         } catch (e) {
-            alert(e.response?.data?.message || 'Lỗi tạo giao dịch');
+            toast.error(e.response?.data?.message || 'Lỗi tạo giao dịch');
         } finally {
             setLoading(false);
         }
@@ -88,13 +93,13 @@ export default function TopupPage() {
         setConfirming(true);
         try {
             const res = await axiosClient.post(`/topup/confirm/${currentTx.transaction.id}`);
-            alert(res.data.message);
+            toast.success(res.data.message);
             updateUserBalance(res.data.newBalance);
             setCurrentTx(null);
             setSelectedAmount(null);
             fetchHistory();
         } catch (e) {
-            alert(e.response?.data?.message || 'Lỗi xác nhận');
+            toast.error(e.response?.data?.message || 'Lỗi xác nhận');
         } finally {
             setConfirming(false);
         }
@@ -106,8 +111,9 @@ export default function TopupPage() {
             await axiosClient.delete(`/topup/${currentTx.transaction.id}`);
             setCurrentTx(null);
             setSelectedAmount(null);
+            toast.info('Đã hủy giao dịch');
         } catch (e) {
-            alert('Lỗi hủy giao dịch');
+            toast.error('Lỗi hủy giao dịch');
         }
     };
 
