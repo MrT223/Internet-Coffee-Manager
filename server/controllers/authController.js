@@ -22,9 +22,18 @@ export const login = async (req, res) => {
       role_id: user.role_id,
       user_name: user.user_name,
     };
+    
+    console.log("🔐 Login Debug:", {
+      user_name: user.user_name,
+      role_id: user.role_id,
+      jwtSecret: process.env.JWT_SECRET ? `SET (${process.env.JWT_SECRET.length} chars)` : "NOT SET ❌"
+    });
+    
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
+    
+    console.log("✅ Token created:", token.substring(0, 50) + "...");
 
     res.json({
       token,
@@ -37,7 +46,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Login error:", error);
     res.status(500).json({ message: "Lỗi Server." });
   }
 };

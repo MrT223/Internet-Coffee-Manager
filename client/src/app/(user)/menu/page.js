@@ -8,17 +8,11 @@ export default function MenuPage() {
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState({}); 
-    const { user } = useAuth();
-    
-    // Nếu bạn dùng alert thay vì ToastContext
-    const notify = (msg) => alert(msg); 
+    const { user, updateUserBalance } = useAuth();
 
     useEffect(() => {
-        // Gọi API lấy danh sách món
         axiosClient.get('/menu')
-            .then(res => {
-                setMenuItems(res.data);
-            })
+            .then(res => setMenuItems(res.data))
             .catch(err => console.error("Lỗi tải menu:", err))
             .finally(() => setLoading(false));
     }, []);
@@ -28,22 +22,40 @@ export default function MenuPage() {
             ...prev,
             [item.item_id]: (prev[item.item_id] || 0) + 1
         }));
-        // notify(`Đã thêm ${item.food_name} vào giỏ`); // Bỏ comment nếu muốn thông báo
+    };
+
+    const removeFromCart = (itemId) => {
+        setCart(prev => {
+            const newCart = { ...prev };
+            if (newCart[itemId] > 1) {
+                newCart[itemId]--;
+            } else {
+                delete newCart[itemId];
+            }
+            return newCart;
+        });
     };
 
     const handleCheckout = async () => {
         if (Object.keys(cart).length === 0) return;
         try {
-            const items = Object.entries(cart).map(([id, qty]) => ({
-                item_id: parseInt(id),
-                quantity: qty
-            }));
+            const cartItems = Object.entries(cart).map(([id, qty]) => {
+                const item = menuItems.find(i => i.item_id.toString() === id);
+                return {
+                    item_id: parseInt(id),
+                    quantity: qty,
+                    price: item?.price || 0
+                };
+            });
 
-            await axiosClient.post('/orders', { items });
-            notify("Đặt món thành công! Bếp đang chuẩn bị.");
+            const res = await axiosClient.post('/orders', { cart: cartItems });
+            alert("Đặt món thành công! Bếp đang chuẩn bị.");
+            if (res.data.newBalance !== undefined) {
+                updateUserBalance(res.data.newBalance);
+            }
             setCart({});
         } catch (error) {
-            notify("Đặt món thất bại. " + (error.response?.data?.message || ""));
+            alert("Đặt món thất bại. " + (error.response?.data?.message || ""));
         }
     };
 
@@ -52,75 +64,109 @@ export default function MenuPage() {
         return sum + (item ? item.price * qty : 0);
     }, 0);
 
-    if (loading) return <div className="text-center p-10">Đang tải thực đơn...</div>;
+    const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <div className="text-slate-400">Đang tải thực đơn...</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="container mx-auto p-4 pb-24">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Thực Đơn Quán</h1>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {menuItems.map(item => (
-                    <div key={item.item_id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition flex flex-col">
-                        <div className="relative h-48 w-full bg-gray-200">
-                            {/* Nếu có ảnh thì hiện, không thì hiện ảnh mặc định */}
-                            <Image 
-                                src={item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
-                                alt={item.food_name}
-                                fill
-                                className="object-cover"
-                                unoptimized // Thêm dòng này nếu ảnh từ nguồn ngoài chưa cấu hình domain
-                            />
-                            {!item.stock && (
-                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-lg">
-                                    HẾT HÀNG
+        <div className="min-h-screen bg-slate-950 p-6 pb-32">
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">
+                        🍔 Thực Đơn
+                    </h1>
+                    <p className="text-slate-400 mt-1">Chọn món và đặt ngay - phục vụ tận máy!</p>
+                </div>
+                
+                {/* Menu Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {menuItems.map(item => {
+                        const quantity = cart[item.item_id] || 0;
+                        return (
+                            <div key={item.item_id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg hover:shadow-blue-500/10 transition-all group">
+                                {/* Image */}
+                                <div className="relative h-32 bg-slate-800">
+                                    <Image 
+                                        src={item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
+                                        alt={item.food_name}
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                        unoptimized
+                                    />
+                                    {!item.stock && (
+                                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                                            <span className="text-red-400 font-bold text-sm">HẾT HÀNG</span>
+                                        </div>
+                                    )}
+                                    {quantity > 0 && (
+                                        <div className="absolute top-2 right-2 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                                            {quantity}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                        
-                        <div className="p-4 flex-1 flex flex-col">
-                            <h3 className="font-bold text-lg text-gray-800 mb-1">{item.food_name}</h3>
-                            <div className="mt-auto flex justify-between items-center pt-3 border-t border-dashed">
-                                <span className="text-blue-600 font-bold text-lg">
-                                    {parseInt(item.price).toLocaleString()} đ
-                                </span>
-                                <button 
-                                    onClick={() => addToCart(item)}
-                                    disabled={!item.stock}
-                                    className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-white transition-colors ${
-                                        item.stock 
-                                        ? 'bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200' 
-                                        : 'bg-gray-400 cursor-not-allowed'
-                                    }`}
-                                >
-                                    +
-                                </button>
+                                
+                                {/* Content */}
+                                <div className="p-3">
+                                    <h3 className="font-bold text-sm text-white truncate mb-1">{item.food_name}</h3>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-green-400 font-bold text-sm font-mono">
+                                            {parseInt(item.price).toLocaleString()}đ
+                                        </span>
+                                        {item.stock && (
+                                            <div className="flex items-center gap-1">
+                                                {quantity > 0 && (
+                                                    <button 
+                                                        onClick={() => removeFromCart(item.item_id)}
+                                                        className="w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center text-xs font-bold transition-all"
+                                                    >
+                                                        -
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => addToCart(item)}
+                                                    className="w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center text-xs font-bold transition-all"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
+                        );
+                    })}
+                </div>
             </div>
 
-            {/* Giỏ hàng Floating */}
-            {Object.keys(cart).length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 animate-slide-up">
-                    <div className="container mx-auto flex justify-between items-center">
-                        <div className='text-gray-800'>
-                            <span className="font-bold">Giỏ hàng:</span> {Object.values(cart).reduce((a, b) => a + b, 0)} món
-                            <span className="mx-3 text-gray-300">|</span>
-                            <span className="text-blue-600 font-bold text-xl">{totalAmount.toLocaleString()} đ</span>
+            {/* Floating Cart */}
+            {totalItems > 0 && (
+                <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-50">
+                    <div className="max-w-4xl mx-auto flex justify-between items-center">
+                        <div className="text-white">
+                            <span className="text-slate-400">Giỏ hàng:</span>
+                            <span className="font-bold ml-2">{totalItems} món</span>
+                            <span className="mx-3 text-slate-600">|</span>
+                            <span className="text-green-400 font-bold text-xl font-mono">{totalAmount.toLocaleString()} ₫</span>
                         </div>
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => setCart({})}
-                                className="px-4 py-2 bg-gray-100 text-gray-600 font-medium rounded-lg hover:bg-gray-200"
+                                className="px-4 py-2 bg-slate-800 text-slate-300 font-medium rounded-lg hover:bg-slate-700 transition-all"
                             >
                                 Xóa
                             </button>
                             <button 
                                 onClick={handleCheckout}
-                                className="px-8 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:shadow-lg transition-transform active:scale-95"
+                                className="px-8 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold rounded-lg shadow-lg shadow-orange-900/30 transition-all active:scale-95"
                             >
-                                Đặt Ngay
+                                Đặt Ngay 🚀
                             </button>
                         </div>
                     </div>

@@ -119,13 +119,13 @@ const ChatWidget = ({ user: propUser }) => {
   if (!user) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col items-end">
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col items-end pointer-events-none">
       
       {/* CỬA SỔ CHAT */}
       <div 
         className={`
             bg-slate-900 border border-blue-500/50 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] 
-            mb-4 overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right
+            mb-4 overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right pointer-events-auto
             ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0 pointer-events-none h-0'}
             ${user.role_id !== 3 ? 'w-[700px] h-[500px]' : 'w-[350px] h-[450px]'}
         `}
@@ -248,7 +248,7 @@ const ChatWidget = ({ user: propUser }) => {
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className={`
-            relative w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)]
+            relative w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)] pointer-events-auto
             flex items-center justify-center text-white text-2xl transition-all duration-300 hover:-translate-y-1
             ${isOpen ? 'bg-slate-800 rotate-90' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-[0_4px_25px_rgba(37,99,235,0.6)]'}
         `}

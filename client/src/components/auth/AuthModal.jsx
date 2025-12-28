@@ -65,10 +65,14 @@ const AuthModal = ({ isOpen, onClose }) => {
                 login(token, user);
                 onClose();
 
+                // Đợi cookie được set xong trước khi redirect
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Dùng full page redirect để đảm bảo cookie được đọc đúng
                 if (user.role_id === 1 || user.role_id === 2) {
-                    router.push('/admin');
+                    window.location.href = '/admin';
                 } else {
-                    router.push('/dashboard');
+                    window.location.href = '/dashboard';
                 }
             } else {
                 if (formData.password !== formData.confirm_password) {

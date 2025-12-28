@@ -4,9 +4,6 @@ import { useAuth } from "@/context/AuthContext";
 import axiosClient from '@/api/axios';
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Cấu hình Grid
-const GRID_SIZE = 25;
-
 // Icons
 const MonitorIcon = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -37,6 +34,10 @@ const ComputerMap = () => {
 
     const canManage = user && (user.role_id === 1 || user.role_id === 2);
     const isUser = user && user.role_id === 3;
+
+    // Cấu hình Grid - 12 hàng x 20 cột (hình chữ nhật nằm ngang)
+    const GRID_ROWS = 12;
+    const GRID_COLS = 20;
 
     // --- API CALLS ---
     const fetchComputers = useCallback(async () => {
@@ -169,11 +170,11 @@ const ComputerMap = () => {
     // --- Helper Styles ---
     const getStatusStyle = (status) => {
         switch (status) {
-            case "trong": return "bg-slate-800 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)] text-green-400";
-            case "dat truoc": return "bg-slate-800 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)] text-yellow-400";
-            case "co nguoi": return "bg-red-900/20 border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)] text-red-400";
-            case "bao tri": return "bg-gray-800 border-gray-500 text-gray-400";
-            case "khoa": return "bg-slate-950 border-slate-700 text-slate-600";
+            case "trong": return "bg-green-600 border-green-400 text-white";
+            case "dat truoc": return "bg-yellow-600 border-yellow-400 text-white";
+            case "co nguoi": return "bg-red-600 border-red-400 text-white";
+            case "bao tri": return "bg-gray-600 border-gray-400 text-white";
+            case "khoa": return "bg-slate-700 border-slate-500 text-slate-300";
             default: return "bg-slate-800 border-slate-600";
         }
     };
@@ -184,7 +185,7 @@ const ComputerMap = () => {
             case "dat truoc": return "ĐẶT TRƯỚC";
             case "co nguoi": return "ONLINE";
             case "bao tri": return "BẢO TRÌ";
-            default: return status.toUpperCase();
+            default: return status?.toUpperCase() || "";
         }
     };
 
@@ -194,35 +195,35 @@ const ComputerMap = () => {
 
     // --- RENDER ---
     return (
-        <div className="flex flex-col items-center w-full bg-slate-950 min-h-screen p-4 text-white font-sans">
+        <div className="flex flex-col items-center w-full bg-slate-950 min-h-screen p-2 text-white font-sans">
             {/* Header */}
-            <div className="w-full max-w-7xl flex justify-between items-center mb-6 bg-slate-900 p-4 rounded-xl shadow-lg border border-slate-800">
+            <div className="w-full max-w-[900px] flex flex-col sm:flex-row justify-between items-center mb-2 bg-slate-900 p-3 rounded-lg shadow-lg border border-slate-800 gap-2">
                 
-                <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                    {isSimulationMode ? "🎮 Giả Lập Client Máy Trạm" : "🗺️ Sơ Đồ Phòng Máy Center"}
+                <h2 className="text-base md:text-lg font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                    {isSimulationMode ? "🎮 Giả Lập Client" : "🗺️ Sơ Đồ Phòng Máy"}
                 </h2>
 
-                <div className="flex gap-4 text-xs font-bold">
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></span> Trống</div>
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_#ef4444]"></span> Online</div>
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 bg-yellow-500 rounded-full shadow-[0_0_8px_#eab308]"></span> Đặt trước</div>
+                <div className="flex gap-3 text-[10px] font-bold">
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full"></span> Trống</div>
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full"></span> Online</div>
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded-full"></span> Đặt trước</div>
+                    <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-500 rounded-full"></span> Bảo trì</div>
                 </div>
             </div>
 
-            {/* Grid Map */}
-            <div className="w-full max-w-full overflow-auto custom-scrollbar p-2 bg-slate-900 rounded-xl border border-slate-800 shadow-2xl">
+            {/* Grid Map - 8x15 Horizontal Rectangle - No Scroll */}
+            <div className="w-full max-w-[900px] p-3 bg-slate-900 rounded-lg border border-slate-800 shadow-2xl">
                 {loading ? (
-                    <div className="h-96 flex items-center justify-center text-blue-400">Đang tải bản đồ...</div>
+                    <div className="h-48 flex items-center justify-center text-blue-400">Đang tải bản đồ...</div>
                 ) : (
                     <div 
-                        className="grid gap-2 mx-auto"
+                        className="grid gap-1"
                         style={{ 
-                            gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(50px, 1fr))`,
-                            width: 'fit-content'
+                            gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
                         }}
                     >
-                        {Array.from({ length: GRID_SIZE }).map((_, row) => (
-                            Array.from({ length: GRID_SIZE }).map((_, col) => {
+                        {Array.from({ length: GRID_ROWS }).map((_, row) => (
+                            Array.from({ length: GRID_COLS }).map((_, col) => {
                                 const key = `${row}-${col}`;
                                 const comp = computerMap[key];
                                 
@@ -231,19 +232,16 @@ const ComputerMap = () => {
                                         <div
                                             key={key}
                                             onClick={() => handleComputerClick(comp)}
+                                            title={`${comp.computer_name} - ${getStatusLabel(comp.status)}${comp.CurrentUser ? ` (${comp.CurrentUser.user_name})` : ''}`}
                                             className={`
-                                                w-12 h-12 md:w-14 md:h-14 rounded-md border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 relative group
+                                                aspect-square rounded-[2px] border flex items-center justify-center cursor-pointer transition-all duration-150 hover:scale-125 hover:z-20 relative
                                                 ${getStatusStyle(comp.status)}
                                             `}
                                         >
-                                            <MonitorIcon className="w-6 h-6 md:w-8 md:h-8 mb-1" />
-                                            <span className="text-[10px] font-bold leading-none">{comp.computer_name.replace('Máy ', '')}</span>
-                                            
-                                            {/* Tooltip */}
-                                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max px-3 py-1 bg-black/90 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity border border-slate-600">
-                                                {comp.computer_name} - {getStatusLabel(comp.status)}
-                                                {comp.CurrentUser && <div className="text-blue-400">User: {comp.CurrentUser.user_name}</div>}
-                                            </div>
+                                            <MonitorIcon className="w-[60%] h-[60%]" />
+                                            {comp.CurrentUser && (
+                                                <div className="absolute -top-[2px] -right-[2px] w-[6px] h-[6px] bg-blue-500 rounded-full"></div>
+                                            )}
                                         </div>
                                     );
                                 } else {
@@ -252,8 +250,8 @@ const ComputerMap = () => {
                                             key={key}
                                             onClick={() => handleEmptyCellClick(row, col)}
                                             className={`
-                                                w-12 h-12 md:w-14 md:h-14 rounded-md border border-slate-800/50 bg-slate-900/30
-                                                ${canManage ? 'cursor-pointer hover:bg-slate-800 hover:border-slate-600' : ''}
+                                                aspect-square rounded-[2px] bg-slate-800/20 border border-slate-800/30
+                                                ${canManage ? 'cursor-pointer hover:bg-slate-700/40 hover:border-slate-600' : ''}
                                             `}
                                         />
                                     );

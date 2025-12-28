@@ -1,91 +1,191 @@
 'use client';
 import { useEffect, useState } from 'react';
 import axiosClient from '@/api/axios';
+import { useAuth } from '@/context/AuthContext';
 
 export default function OrdersPage() {
+    const { loading: authLoading, isAuthenticated } = useAuth();
     const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
 
-    useEffect(() => {
-        axiosClient.get('/orders')
-            .then(res => setOrders(res.data))
-            .catch(err => console.error(err));
-    }, []);
-
-    const updateStatus = (id, newStatus) => {
-        // Call API update status
-        console.log(`Update order ${id} to ${newStatus}`);
+    const fetchOrders = async () => {
+        try {
+            const res = await axiosClient.get('/orders/all');
+            setOrders(res.data);
+        } catch (err) {
+            console.error("Lỗi tải đơn hàng:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            fetchOrders();
+        }
+    }, [authLoading, isAuthenticated]);
+
+    const updateStatus = async (id, newStatus) => {
+        try {
+            await axiosClient.put(`/orders/${id}`, { status: newStatus });
+            fetchOrders();
+        } catch (error) {
+            alert("Cập nhật thất bại: " + (error.response?.data?.message || "Lỗi server"));
+        }
+    };
+
+    const getStatusStyle = (status) => {
+        switch(status) {
+            case 'pending': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30';
+            case 'completed': return 'bg-green-500/10 text-green-400 border border-green-500/30';
+            case 'cancelled': return 'bg-red-500/10 text-red-400 border border-red-500/30';
+            default: return 'bg-slate-700 text-slate-300';
+        }
+    };
+
+    const getStatusText = (status) => {
+        switch(status) {
+            case 'pending': return '⏳ Đang chờ';
+            case 'completed': return '✓ Hoàn tất';
+            case 'cancelled': return '✕ Đã hủy';
+            default: return status;
+        }
+    };
+
+    const filteredOrders = filter === 'all' 
+        ? orders 
+        : orders.filter(o => o.status === filter);
+
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <h2 className="text-2xl font-bold text-slate-800">Quản lý Đơn hàng </h2>
+        <div className="p-6 bg-slate-950 min-h-screen text-white">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">
+                    🍔 Quản Lý Đơn Hàng
+                </h2>
                 <div className="flex gap-2">
-                    <button className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-sm font-medium hover:bg-slate-200">Đang chờ</button>
-                    <button className="bg-white text-slate-600 px-3 py-1 rounded-lg text-sm font-medium hover:bg-slate-50">Đã xong</button>
+                    {['all', 'pending', 'completed', 'cancelled'].map(f => (
+                        <button 
+                            key={f}
+                            onClick={() => setFilter(f)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                                filter === f 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            }`}
+                        >
+                            {f === 'all' ? 'Tất cả' : f === 'pending' ? 'Đang chờ' : f === 'completed' ? 'Hoàn tất' : 'Đã hủy'}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 text-slate-600 uppercase text-xs font-bold">
-                        <tr>
-                            <th className="p-4 border-b">ID</th>
-                            <th className="p-4 border-b">Khách hàng / Máy</th>
-                            <th className="p-4 border-b">Món đã gọi</th>
-                            <th className="p-4 border-b">Tổng tiền</th>
-                            <th className="p-4 border-b">Trạng thái</th>
-                            <th className="p-4 border-b text-right">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm">
-                        {orders.map(order => (
-                            <tr key={order._id} className="hover:bg-slate-50 transition-colors">
-                                <td className="p-4 font-mono text-slate-500">#{order._id.slice(-6)}</td>
-                                <td className="p-4">
-                                    <div className="font-bold text-slate-800">{order.user?.username || 'Khách vãng lai'}</div>
-                                    <div className="text-xs text-slate-500">Máy: {order.computer_id || 'N/A'}</div>
-                                </td>
-                                <td className="p-4">
-                                    <ul className="list-disc list-inside text-slate-700">
-                                        {order.items?.map((item, idx) => (
-                                            <li key={idx}>
-                                                {item.quantity}x <span className="font-medium">{item.name}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </td>
-                                <td className="p-4 font-bold text-indigo-600">
-                                    {parseInt(order.total_price).toLocaleString()} đ
-                                </td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-                                        order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                    }`}>
-                                        {order.status === 'pending' ? 'Đang chờ' : order.status}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-right space-x-2">
-                                    {order.status === 'pending' && (
-                                        <button 
-                                            onClick={() => updateStatus(order._id, 'completed')}
-                                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
-                                        >
-                                            ✓ Hoàn tất
-                                        </button>
-                                    )}
-                                    <button className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
-                                </td>
+            {/* Table */}
+            <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-800 text-slate-400 uppercase text-xs">
+                            <tr>
+                                <th className="p-4">Mã đơn</th>
+                                <th className="p-4">Khách hàng</th>
+                                <th className="p-4">Món đã gọi</th>
+                                <th className="p-4">Tổng tiền</th>
+                                <th className="p-4">Thời gian</th>
+                                <th className="p-4 text-center">Trạng thái</th>
+                                <th className="p-4 text-center">Hành động</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-                {orders.length === 0 && (
-                    <div className="p-8 text-center text-slate-500">Không có đơn nào.</div>
-                )}
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 text-sm">
+                            {loading ? (
+                                <tr><td colSpan="7" className="p-8 text-center text-slate-500">Đang tải...</td></tr>
+                            ) : filteredOrders.length === 0 ? (
+                                <tr><td colSpan="7" className="p-8 text-center text-slate-500">Không có đơn hàng nào.</td></tr>
+                            ) : filteredOrders.map(order => (
+                                <tr key={order.bill_id} className="hover:bg-slate-800/50 transition-colors">
+                                    <td className="p-4 font-mono text-blue-400">#{order.bill_id}</td>
+                                    <td className="p-4">
+                                        <div className="font-bold text-white">{order.User?.user_name || 'N/A'}</div>
+                                    </td>
+                                    <td className="p-4">
+                                        {order.OrderDetails && order.OrderDetails.length > 0 ? (
+                                            <ul className="text-slate-300 space-y-1">
+                                                {order.OrderDetails.map((detail, idx) => (
+                                                    <li key={idx} className="flex items-center gap-1">
+                                                        <span className="text-orange-400">{detail.quantity}x</span>
+                                                        <span>{detail.MenuItem?.food_name || 'Món đã xóa'}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <span className="text-slate-500">Không có chi tiết</span>
+                                        )}
+                                    </td>
+                                    <td className="p-4 font-mono font-bold text-green-400">
+                                        {parseInt(order.total_amount).toLocaleString()} ₫
+                                    </td>
+                                    <td className="p-4 text-slate-400 text-xs">
+                                        {order.order_date ? new Date(order.order_date).toLocaleString('vi-VN') : 'N/A'}
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusStyle(order.status)}`}>
+                                            {getStatusText(order.status)}
+                                        </span>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex justify-center gap-1">
+                                            {order.status === 'pending' && (
+                                                <>
+                                                    <button 
+                                                        onClick={() => updateStatus(order.bill_id, 'completed')}
+                                                        className="bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded text-xs font-bold transition-all"
+                                                        title="Hoàn tất"
+                                                    >
+                                                        ✓
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            if(confirm('Hủy đơn này? Tiền sẽ được hoàn lại cho khách.')) {
+                                                                updateStatus(order.bill_id, 'cancelled');
+                                                            }
+                                                        }}
+                                                        className="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs font-bold transition-all"
+                                                        title="Hủy đơn"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </>
+                                            )}
+                                            {order.status !== 'pending' && (
+                                                <span className="text-slate-500 text-xs">—</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Summary */}
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-white">{orders.length}</div>
+                    <div className="text-slate-400 text-sm">Tổng đơn</div>
+                </div>
+                <div className="bg-slate-900 border border-yellow-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-yellow-400">{orders.filter(o => o.status === 'pending').length}</div>
+                    <div className="text-slate-400 text-sm">Đang chờ</div>
+                </div>
+                <div className="bg-slate-900 border border-green-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-green-400">{orders.filter(o => o.status === 'completed').length}</div>
+                    <div className="text-slate-400 text-sm">Hoàn tất</div>
+                </div>
+                <div className="bg-slate-900 border border-red-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-red-400">{orders.filter(o => o.status === 'cancelled').length}</div>
+                    <div className="text-slate-400 text-sm">Đã hủy</div>
+                </div>
             </div>
         </div>
     );

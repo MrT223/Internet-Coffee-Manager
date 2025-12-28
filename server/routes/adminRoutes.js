@@ -17,5 +17,11 @@ router.put("/users/:id/topup", adminController.topUpBalance);
 
 router.put("/users/:id/role", adminController.changeUserRole);
 
+router.put("/users/:id/lock", adminController.toggleLockUser);
+
+router.put("/users/:id/reset-password", adminController.resetPassword);
+
 router.get("/stats", protect, authorize([1, 2]), adminController.getDashboardStats);
+
 export default router;
+

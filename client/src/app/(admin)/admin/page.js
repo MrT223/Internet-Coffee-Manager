@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import axiosClient from '@/api/axios';
+import { useAuth } from '@/context/AuthContext';
 
 const StatCard = ({ title, value, icon, color, subText }) => (
     <div className="relative overflow-hidden bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg hover:shadow-blue-500/10 transition-all group">
@@ -21,6 +22,7 @@ const StatCard = ({ title, value, icon, color, subText }) => (
 );
 
 export default function AdminDashboard() {
+    const { loading: authLoading, isAuthenticated } = useAuth();
     const [stats, setStats] = useState({
         revenue: 0,
         activeComputers: 0,
@@ -30,6 +32,9 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Đợi auth load xong và đã đăng nhập mới fetch
+        if (authLoading || !isAuthenticated) return;
+        
         const fetchStats = async () => {
             try {
                 const res = await axiosClient.get('/admin/stats');
@@ -44,7 +49,7 @@ export default function AdminDashboard() {
         // Refresh mỗi 30s
         const interval = setInterval(fetchStats, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [authLoading, isAuthenticated]);
 
     if (loading) return <div className="p-8 text-white">Đang tải dữ liệu...</div>;
 
