@@ -6,24 +6,38 @@ import * as uploadController from "../controllers/uploadController.js";
 
 const router = express.Router();
 
-// Upload avatar (user đã đăng nhập)
+const uploadWrapper = (uploadMiddleware) => (req, res, next) => {
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      console.error("❌ UPLOAD ERROR:", err); 
+      
+      return res.status(400).json({ 
+        message: "Lỗi upload ảnh: " + (err.message || "Lỗi không xác định"),
+        detail: err 
+      });
+    }
+    next();
+  });
+};
+
+// Route Upload Avatar
 router.post(
   "/avatar",
   protect,
-  uploadAvatar.single("avatar"),
+  uploadWrapper(uploadAvatar.single("avatar")), 
   uploadController.uploadAvatar
 );
 
-// Upload ảnh cho menu item (admin/staff only)
+// Route Upload Menu Image
 router.post(
   "/menu-image",
   protect,
   authorize([1, 2]),
-  uploadMenuItem.single("image"),
+  uploadWrapper(uploadMenuItem.single("image")), 
   uploadController.uploadMenuImage
 );
 
-// Xóa ảnh (admin/staff only)
+// Route Xóa ảnh
 router.delete(
   "/image",
   protect,

@@ -57,7 +57,6 @@ CREATE TABLE "User" (
 
 -- Dữ liệu mẫu (password: 123456 - hash bằng bcrypt)
 INSERT INTO "User" (user_name, password, role_id, balance, status, avatar) VALUES 
-('admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 0, 'offline', NULL),
 ('staff1', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, 0, 'offline', NULL),
 ('user1', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 100000, 'offline', NULL),
 ('user2', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 50000, 'offline', NULL);

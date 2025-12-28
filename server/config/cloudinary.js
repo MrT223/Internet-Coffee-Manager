@@ -5,54 +5,54 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// --- DEBUG LOGGING FOR CLOUDINARY CONFIG ---
+console.log("============== CLOUDINARY CONFIG DEBUG ==============");
+console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME || "MISSING");
+console.log("API Key:", process.env.CLOUDINARY_API_KEY ? "Loaded OK" : "MISSING");
+console.log("API Secret:", process.env.CLOUDINARY_API_SECRET ? "Loaded OK" : "MISSING");
+console.log("====================================================");
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Storage cho avatar người dùng
+// Storage cho avatar
 const avatarStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: 'CyberOps_Avatars',
-      allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'gif'],
-      transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face' }],
-    };
+  params: {
+    folder: 'CyberOps_Avatars',
+    resource_type: 'auto',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
   },
 });
 
-// Storage cho menu items (đồ ăn, thức uống)
 const menuStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: 'CyberOps_Menu',
-      allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-      transformation: [{ width: 500, height: 500, crop: 'fill' }],
-    };
+  params: {
+    folder: 'CyberOps_Menu',
+    resource_type: 'auto', 
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
   },
 });
 
-// Middleware upload
-export const uploadAvatar = multer({ storage: avatarStorage });
-export const uploadMenuItem = multer({ storage: menuStorage });
+// Middleware xử lý lỗi Multer ngay tại chỗ
+const uploadAvatar = multer({ storage: avatarStorage });
+const uploadMenuItem = multer({ storage: menuStorage });
 
-// Helper function để xóa ảnh cũ trên Cloudinary
+export { uploadAvatar, uploadMenuItem, cloudinary };
+
+// Helper xóa ảnh
 export const deleteFromCloudinary = async (imageUrl) => {
   if (!imageUrl) return;
-  
   try {
-    // Extract public_id từ URL
     const urlParts = imageUrl.split('/');
-    const folderAndFile = urlParts.slice(-2).join('/'); // e.g., "CyberOps_Avatars/abc123"
-    const publicId = folderAndFile.split('.')[0]; // Remove file extension
-    
+    const folderAndFile = urlParts.slice(-2).join('/');
+    const publicId = folderAndFile.split('.')[0];
     await cloudinary.uploader.destroy(publicId);
-    console.log('✅ Deleted old image from Cloudinary:', publicId);
   } catch (error) {
-    console.error('❌ Error deleting image from Cloudinary:', error);
+    console.error('Error deleting image:', error);
   }
 };
 
