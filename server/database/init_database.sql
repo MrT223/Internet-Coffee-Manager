@@ -1,18 +1,17 @@
 -- =====================================================
--- SQL Script: Tạo lại Database cho Net_Manager (PostgreSQL)
--- Ngày tạo: 2025-12-28
+-- SQL Script: Khởi tạo Database cho Net_Manager (PostgreSQL)
+-- Cập nhật: 2025-12-28
+-- Đồng bộ với Sequelize Models
 -- =====================================================
 
--- LƯU Ý: Chạy các lệnh CREATE DATABASE riêng trước
--- Sau đó kết nối vào database CyberOps và chạy phần còn lại
-
--- Nếu cần tạo database mới (chạy riêng trong psql):
--- DROP DATABASE IF EXISTS "CyberOps";
+-- LƯU Ý: Chạy script này sau khi đã tạo database CyberOps
 -- CREATE DATABASE "CyberOps" ENCODING 'UTF8';
 
 -- =====================================================
--- 1. BẢNG ROLE (Vai trò)
+-- XÓA CÁC BẢNG VÀ TYPES CŨ (theo thứ tự phụ thuộc)
 -- =====================================================
+DROP TABLE IF EXISTS promotion CASCADE;
+DROP TABLE IF EXISTS topup_transaction CASCADE;
 DROP TABLE IF EXISTS message CASCADE;
 DROP TABLE IF EXISTS order_details CASCADE;
 DROP TABLE IF EXISTS food_order CASCADE;
@@ -21,22 +20,30 @@ DROP TABLE IF EXISTS computer CASCADE;
 DROP TABLE IF EXISTS "User" CASCADE;
 DROP TABLE IF EXISTS role CASCADE;
 
+-- Xóa ENUM types (để có thể chạy lại script)
+DROP TYPE IF EXISTS order_status CASCADE;
+DROP TYPE IF EXISTS topup_status CASCADE;
+DROP TYPE IF EXISTS promotion_type CASCADE;
+
+-- =====================================================
+-- 1. BẢNG ROLE (Vai trò)
+-- Model: Role.js -> tableName: "role"
+-- =====================================================
 CREATE TABLE role (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(255) NOT NULL UNIQUE
 );
 
--- Dữ liệu mẫu cho Role
 INSERT INTO role (role_id, role_name) VALUES 
 (1, 'admin'),
 (2, 'staff'),
 (3, 'user');
 
--- Reset sequence
 SELECT setval('role_role_id_seq', 3, true);
 
 -- =====================================================
 -- 2. BẢNG USER (Người dùng)
+-- Model: User.js -> tableName: "User"
 -- =====================================================
 CREATE TABLE "User" (
     user_id BIGSERIAL PRIMARY KEY,
@@ -44,18 +51,20 @@ CREATE TABLE "User" (
     password VARCHAR(255) NOT NULL,
     role_id INT REFERENCES role(role_id) ON DELETE SET NULL,
     balance INT DEFAULT 0,
-    status VARCHAR(255) DEFAULT 'offline'
+    status VARCHAR(255) DEFAULT 'offline',
+    avatar VARCHAR(255) NULL                      -- [THÊM] Cột avatar
 );
 
--- Dữ liệu mẫu cho User (password: 123456 đã hash bằng bcrypt)
-INSERT INTO "User" (user_name, password, role_id, balance, status) VALUES 
-('admin', '$2b$10$rQZ8K5F5H5H5H5H5H5H5HuUK5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X', 1, 0, 'offline'),
-('staff1', '$2b$10$rQZ8K5F5H5H5H5H5H5H5HuUK5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X', 2, 0, 'offline'),
-('user1', '$2b$10$rQZ8K5F5H5H5H5H5H5H5HuUK5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X', 3, 100000, 'offline'),
-('user2', '$2b$10$rQZ8K5F5H5H5H5H5H5H5HuUK5X5X5X5X5X5X5X5X5X5X5X5X5X5X5X', 3, 50000, 'offline');
+-- Dữ liệu mẫu (password: 123456 - hash bằng bcrypt)
+INSERT INTO "User" (user_name, password, role_id, balance, status, avatar) VALUES 
+('admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 0, 'offline', NULL),
+('staff1', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 2, 0, 'offline', NULL),
+('user1', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 100000, 'offline', NULL),
+('user2', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 50000, 'offline', NULL);
 
 -- =====================================================
--- 3. BẢNG COMPUTER (Máy tính - Sơ đồ phòng máy 12x20)
+-- 3. BẢNG COMPUTER (Máy tính - Sơ đồ phòng máy)
+-- Model: Computer.js -> tableName: "computer"
 -- =====================================================
 CREATE TABLE computer (
     computer_id SERIAL PRIMARY KEY,
@@ -63,60 +72,33 @@ CREATE TABLE computer (
     x INT NOT NULL,
     y INT NOT NULL,
     status VARCHAR(255) DEFAULT 'bao tri',
-    current_user_id BIGINT REFERENCES "User"(user_id) ON DELETE SET NULL,
+    current_user_id BIGINT REFERENCES "User"(user_id) ON DELETE SET NULL,  -- [SỬA] INT -> BIGINT
     session_start_time TIMESTAMP NULL,
     UNIQUE (x, y)
 );
 
--- Dữ liệu mẫu cho Computer (Grid 12x20)
--- Hàng 1 (x=1): 5 máy
+-- Dữ liệu mẫu: Phòng máy Grid 12x20
+-- Khu thường (Hàng 1-2, 4-5)
 INSERT INTO computer (computer_name, x, y, status) VALUES 
-('PC-01', 1, 1, 'trong'),
-('PC-02', 1, 2, 'trong'),
-('PC-03', 1, 3, 'trong'),
-('PC-04', 1, 5, 'trong'),
-('PC-05', 1, 6, 'trong');
+('PC-01', 1, 1, 'trong'), ('PC-02', 1, 2, 'trong'), ('PC-03', 1, 3, 'trong'),
+('PC-04', 1, 5, 'trong'), ('PC-05', 1, 6, 'trong'),
+('PC-06', 2, 1, 'trong'), ('PC-07', 2, 2, 'trong'), ('PC-08', 2, 3, 'trong'),
+('PC-09', 2, 5, 'trong'), ('PC-10', 2, 6, 'trong'),
+('PC-11', 4, 1, 'trong'), ('PC-12', 4, 2, 'trong'), ('PC-13', 4, 3, 'trong'),
+('PC-14', 4, 5, 'trong'), ('PC-15', 4, 6, 'trong'),
+('PC-16', 5, 1, 'trong'), ('PC-17', 5, 2, 'trong'), ('PC-18', 5, 3, 'trong'),
+('PC-19', 5, 5, 'trong'), ('PC-20', 5, 6, 'trong');
 
--- Hàng 2 (x=2): 5 máy
+-- Khu VIP (Hàng 7-8)
 INSERT INTO computer (computer_name, x, y, status) VALUES 
-('PC-06', 2, 1, 'trong'),
-('PC-07', 2, 2, 'trong'),
-('PC-08', 2, 3, 'trong'),
-('PC-09', 2, 5, 'trong'),
-('PC-10', 2, 6, 'trong');
-
--- Hàng 4 (x=4): 5 máy
-INSERT INTO computer (computer_name, x, y, status) VALUES 
-('PC-11', 4, 1, 'trong'),
-('PC-12', 4, 2, 'trong'),
-('PC-13', 4, 3, 'trong'),
-('PC-14', 4, 5, 'trong'),
-('PC-15', 4, 6, 'trong');
-
--- Hàng 5 (x=5): 5 máy
-INSERT INTO computer (computer_name, x, y, status) VALUES 
-('PC-16', 5, 1, 'trong'),
-('PC-17', 5, 2, 'trong'),
-('PC-18', 5, 3, 'trong'),
-('PC-19', 5, 5, 'trong'),
-('PC-20', 5, 6, 'trong');
-
--- Hàng 7 (x=7): Khu VIP - 4 máy
-INSERT INTO computer (computer_name, x, y, status) VALUES 
-('VIP-01', 7, 10, 'trong'),
-('VIP-02', 7, 11, 'trong'),
-('VIP-03', 7, 12, 'trong'),
-('VIP-04', 7, 13, 'trong');
-
--- Hàng 8 (x=8): Khu VIP - 4 máy
-INSERT INTO computer (computer_name, x, y, status) VALUES 
-('VIP-05', 8, 10, 'trong'),
-('VIP-06', 8, 11, 'trong'),
-('VIP-07', 8, 12, 'trong'),
-('VIP-08', 8, 13, 'trong');
+('VIP-01', 7, 10, 'trong'), ('VIP-02', 7, 11, 'trong'),
+('VIP-03', 7, 12, 'trong'), ('VIP-04', 7, 13, 'trong'),
+('VIP-05', 8, 10, 'trong'), ('VIP-06', 8, 11, 'trong'),
+('VIP-07', 8, 12, 'trong'), ('VIP-08', 8, 13, 'trong');
 
 -- =====================================================
 -- 4. BẢNG MENU_ITEM (Thực đơn đồ ăn/uống)
+-- Model: MenuItem.js -> tableName: "Menu_Item"
 -- =====================================================
 CREATE TABLE "Menu_Item" (
     item_id SERIAL PRIMARY KEY,
@@ -126,7 +108,6 @@ CREATE TABLE "Menu_Item" (
     image_url VARCHAR(255) NULL
 );
 
--- Dữ liệu mẫu cho Menu
 INSERT INTO "Menu_Item" (food_name, price, stock, image_url) VALUES 
 ('Mì tôm', 15000, true, '/images/menu/mi-tom.jpg'),
 ('Coca Cola', 12000, true, '/images/menu/coca.jpg'),
@@ -141,12 +122,13 @@ INSERT INTO "Menu_Item" (food_name, price, stock, image_url) VALUES
 
 -- =====================================================
 -- 5. BẢNG FOOD_ORDER (Đơn hàng đồ ăn)
+-- Model: FoodOrder.js -> tableName: "food_order"
 -- =====================================================
 CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled');
 
 CREATE TABLE food_order (
     bill_id SERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,  -- [SỬA] INT -> BIGINT
     total_amount INT NOT NULL,
     status order_status DEFAULT 'pending',
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -154,6 +136,7 @@ CREATE TABLE food_order (
 
 -- =====================================================
 -- 6. BẢNG ORDER_DETAILS (Chi tiết đơn hàng)
+-- Model: OrderDetail.js -> tableName: "order_details"
 -- =====================================================
 CREATE TABLE order_details (
     detail_id SERIAL PRIMARY KEY,
@@ -166,11 +149,12 @@ CREATE TABLE order_details (
 
 -- =====================================================
 -- 7. BẢNG MESSAGE (Tin nhắn chat)
+-- Model: Message.js -> tableName: "message"
 -- =====================================================
 CREATE TABLE message (
     message_id SERIAL PRIMARY KEY,
     conversation_id VARCHAR(50) NULL,
-    sender_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
+    sender_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,  -- [SỬA] INT -> BIGINT
     sender_name VARCHAR(255) NOT NULL,
     role_id INT DEFAULT 3,
     content TEXT NOT NULL,
@@ -180,8 +164,8 @@ CREATE TABLE message (
 
 -- =====================================================
 -- 8. BẢNG TOPUP_TRANSACTION (Giao dịch nạp tiền)
+-- Model: TopupTransaction.js -> tableName: "topup_transaction"
 -- =====================================================
-DROP TABLE IF EXISTS topup_transaction CASCADE;
 CREATE TYPE topup_status AS ENUM ('pending', 'success', 'expired', 'cancelled');
 
 CREATE TABLE topup_transaction (
@@ -196,25 +180,24 @@ CREATE TABLE topup_transaction (
 
 -- =====================================================
 -- 9. BẢNG PROMOTION (Khuyến mãi & Sự kiện)
+-- Model: Promotion.js -> tableName: "promotion"
 -- =====================================================
-DROP TABLE IF EXISTS promotion CASCADE;
 CREATE TYPE promotion_type AS ENUM ('announcement', 'topup_bonus', 'event');
 
 CREATE TABLE promotion (
     promotion_id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    description TEXT,
+    description TEXT NULL,
     type promotion_type DEFAULT 'announcement',
-    bonus_percent INT DEFAULT 0,              -- % bonus cho topup (VD: 20 = +20%)
-    min_amount INT DEFAULT 0,                 -- Số tiền nạp tối thiểu để áp dụng
-    start_date TIMESTAMPTZ NOT NULL,          -- Dùng TIMESTAMPTZ để hỗ trợ timezone
+    bonus_percent INT DEFAULT 0,
+    min_amount INT DEFAULT 0,
+    start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
-    image_url VARCHAR(500),
+    image_url VARCHAR(500) NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Dữ liệu mẫu cho Promotion
 INSERT INTO promotion (title, description, type, bonus_percent, min_amount, start_date, end_date, is_active) VALUES
 ('🔥 Nạp 100K nhận 120K', 'Khuyến mãi nạp tiền +20% áp dụng từ 28/12 - 31/12', 'topup_bonus', 20, 100000, '2025-12-28 00:00:00+07', '2025-12-31 23:59:59+07', true),
 ('🎄 Sự kiện Giáng Sinh', 'Giảm giá 50% dịch vụ trong tuần lễ Giáng Sinh', 'event', 0, 0, '2025-12-20 00:00:00+07', '2025-12-27 23:59:59+07', false),
@@ -223,4 +206,4 @@ INSERT INTO promotion (title, description, type, bonus_percent, min_amount, star
 -- =====================================================
 -- HOÀN TẤT
 -- =====================================================
-SELECT 'Database CyberOps đã được tạo thành công!' AS Result;
+SELECT 'Database CyberOps đã được khởi tạo thành công!' AS result;
