@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useChatNotification } from '@/context/ChatContext';
 
@@ -16,11 +16,20 @@ const menuItems = [
 
 const Sidebar = ({ isOpen }) => {
     const pathname = usePathname();
+    const router = useRouter();
     const { logout } = useAuth();
     const { hasUnread, unreadCount, clearUnread } = useChatNotification() || {};
 
     const handleChatClick = () => {
         if (clearUnread) clearUnread();
+    };
+
+    // Lưu trạng thái dashboard trước khi chuyển sang trang chủ
+    const handleViewHomepage = () => {
+        // Lưu trang admin hiện tại để quay lại
+        sessionStorage.setItem('adminLastPath', pathname);
+        sessionStorage.setItem('adminReturnFlag', 'true');
+        router.push('/');
     };
 
     return (
@@ -75,14 +84,13 @@ const Sidebar = ({ isOpen }) => {
             {/* Footer Actions */}
             <div className="p-4 border-t border-slate-800 bg-slate-950 space-y-3">
                 {/* Nút Xem Trang Chủ */}
-                <Link 
-                    href="/" 
-                    target="_blank"
+                <button 
+                    onClick={handleViewHomepage}
                     className="flex items-center justify-center w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg transition-colors text-sm font-bold border border-slate-700 group"
                 >
                     <span className="mr-2 group-hover:scale-110 transition-transform">🏠</span> 
                     Xem Trang Chủ
-                </Link>
+                </button>
 
                 {/* Nút Đăng Xuất */}
                 <button 

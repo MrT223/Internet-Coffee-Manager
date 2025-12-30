@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChatNotification } from '@/context/ChatContext';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import AuthModal from '@/components/auth/AuthModal';
 import { 
@@ -15,14 +16,37 @@ import {
   Home, 
   UtensilsCrossed, 
   LogIn,
-  Menu
+  Menu,
+  ArrowLeftCircle
 } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { hasUnread, unreadCount, clearUnread } = useChatNotification() || {};
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [adminReturnPath, setAdminReturnPath] = useState(null);
+
+  // Check nếu admin đang xem trang chủ (từ sidebar)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const returnFlag = sessionStorage.getItem('adminReturnFlag');
+      const lastPath = sessionStorage.getItem('adminLastPath');
+      if (returnFlag === 'true' && lastPath) {
+        setAdminReturnPath(lastPath);
+      }
+    }
+  }, []);
+
+  // Hàm quay lại admin dashboard
+  const handleReturnToAdmin = () => {
+    const path = adminReturnPath || '/admin';
+    sessionStorage.removeItem('adminReturnFlag');
+    sessionStorage.removeItem('adminLastPath');
+    setAdminReturnPath(null);
+    router.push(path);
+  };
 
   return (
     <>
@@ -37,6 +61,15 @@ const Navbar = () => {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex space-x-8 items-center">
+              {/* Nút quay lại Admin nếu admin đang xem trang chủ */}
+              {adminReturnPath && (user?.role_id === 1 || user?.role_id === 2) && (
+                <button
+                  onClick={handleReturnToAdmin}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-medium rounded-full transition-all shadow-lg shadow-blue-900/30"
+                >
+                  <ArrowLeftCircle className="w-4 h-4" /> Quay lại Admin
+                </button>
+              )}
               <Link href="/" className="hover:text-blue-400 transition-colors">Trang chủ</Link>
               <Link href="/menu" className="hover:text-blue-400 transition-colors">Dịch vụ & Menu</Link>
               <Link href="/booking" className="hover:text-blue-400 transition-colors">Đặt máy</Link>
@@ -112,6 +145,15 @@ const Navbar = () => {
           {/* Mobile Menu Content */}
           {isMenuOpen && (
             <div className="md:hidden bg-slate-800 pb-4 rounded-b-xl">
+              {/* Nút quay lại Admin cho mobile */}
+              {adminReturnPath && (user?.role_id === 1 || user?.role_id === 2) && (
+                <button
+                  onClick={handleReturnToAdmin}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-blue-400 font-bold hover:bg-slate-700"
+                >
+                  <ArrowLeftCircle className="w-4 h-4" /> Quay lại Admin
+                </button>
+              )}
               <Link href="/" className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700">
                 <Home className="w-4 h-4 text-slate-400" /> Trang chủ
               </Link>

@@ -62,7 +62,9 @@ export const logout = async (req, res) => {
         where: { current_user_id: userId },
       });
 
-      if (computer) {
+      // Chỉ reset máy nếu đang "co nguoi" (đang chơi)
+      // Nếu "dat truoc" → giữ nguyên để tiền cọc được bảo toàn
+      if (computer && computer.status === "co nguoi") {
         computer.status = "trong";
         computer.current_user_id = null;
         computer.session_start_time = null;
@@ -72,7 +74,7 @@ export const logout = async (req, res) => {
       user.status = "offline";
       await user.save();
     }
-    res.json({ message: "Đăng xuất thành công. Đã rời khỏi máy trạm." });
+    res.json({ message: "Đăng xuất thành công." });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi đăng xuất." });
