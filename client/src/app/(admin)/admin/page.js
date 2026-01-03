@@ -102,69 +102,56 @@ export default function AdminDashboard() {
             </div>
 
             {/* Biểu đồ Doanh thu */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            <span className="text-green-400">📈</span> Biểu Đồ Doanh Thu (7 Ngày)
-                        </h3>
-                    </div>
-
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData}>
-                                <defs>
-                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="#94a3b8"
-                                    tick={{ fontSize: 12 }}
-                                    axisLine={false}
-                                    tickLine={false}
-                                />
-                                <YAxis
-                                    stroke="#94a3b8"
-                                    tick={{ fontSize: 12 }}
-                                    tickFormatter={(value) => `${value / 1000}k`}
-                                    axisLine={false}
-                                    tickLine={false}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
-                                    itemStyle={{ color: '#4ade80' }}
-                                    formatter={(value) => [`${value.toLocaleString()} đ`, "Doanh thu"]}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="revenue"
-                                    stroke="#22c55e"
-                                    strokeWidth={3}
-                                    fillOpacity={1}
-                                    fill="url(#colorRevenue)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg w-full">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <span className="text-green-400">📈</span> Biểu Đồ Doanh Thu (7 Ngày)
+                    </h3>
                 </div>
-
-                {/* Box phụ bên cạnh biểu đồ (Ví dụ: Thông báo nhanh) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-                    <h3 className="text-xl font-bold text-white mb-4">Hoạt động gần đây</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-start gap-3 text-sm">
-                            <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500"></div>
-                            <p className="text-slate-400">Hệ thống đang hoạt động ổn định.</p>
-                        </div>
-                        <div className="flex items-start gap-3 text-sm">
-                            <div className="w-2 h-2 mt-1.5 rounded-full bg-green-500"></div>
-                            <p className="text-slate-400">Đã cập nhật dữ liệu doanh thu mới nhất.</p>
-                        </div>
-                    </div>
+                
+                <div style={{ width: '100%', height: 350 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                            <XAxis 
+                                dataKey="date" 
+                                stroke="#94a3b8" 
+                                tick={{fontSize: 14}}
+                                axisLine={false}
+                                tickLine={false}
+                                dy={10}
+                            />
+                            <YAxis 
+                                stroke="#94a3b8" 
+                                tick={{fontSize: 14}}
+                                tickFormatter={(value) => `${value/1000}k`}
+                                axisLine={false}
+                                tickLine={false}
+                                dx={-10}
+                            />
+                            <Tooltip 
+                                contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff', borderRadius: '8px'}}
+                                itemStyle={{color: '#4ade80'}}
+                                formatter={(value) => [`${value.toLocaleString()} đ`, "Doanh thu"]}
+                                labelStyle={{color: '#94a3b8', marginBottom: '5px'}}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="revenue" 
+                                stroke="#22c55e" 
+                                strokeWidth={4}
+                                fillOpacity={1} 
+                                fill="url(#colorRevenue)" 
+                                activeDot={{ r: 8, strokeWidth: 0, fill: '#fff' }}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>
