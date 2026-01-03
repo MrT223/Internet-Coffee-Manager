@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Computer from "../models/Computer.js";
 import FoodOrder from "../models/FoodOrder.js";
 import bcrypt from "bcrypt";
+import { Op } from "sequelize";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -202,5 +203,50 @@ export const getDashboardStats = async (req, res) => {
   } catch (error) {
     console.error("Stats Error:", error);
     res.status(500).json({ message: "Lỗi lấy thống kê" });
+  }
+};
+
+
+export const getRevenueChartData = async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const orders = await FoodOrder.findAll({
+      where: {
+        status: "completed",
+        order_date: { 
+          [Op.gte]: sevenDaysAgo,
+        },
+      },
+      attributes: ["order_date", "total_amount"], 
+    });
+
+    const dailyRevenue = {};
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+      dailyRevenue[dateStr] = 0;
+    }
+
+    orders.forEach((order) => {
+      const date = new Date(order.order_date); 
+      const dateStr = date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+      if (dailyRevenue[dateStr] !== undefined) {
+        dailyRevenue[dateStr] += parseInt(order.total_amount);
+      }
+    });
+
+    const chartData = Object.entries(dailyRevenue)
+      .map(([date, revenue]) => ({ date, revenue }))
+      .reverse();
+
+    res.json(chartData);
+  } catch (error) {
+    console.error("Chart Error:", error);
+    res.status(500).json({ message: "Lỗi lấy dữ liệu biểu đồ" });
   }
 };

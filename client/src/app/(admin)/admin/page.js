@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+
 
 const StatCard = ({ title, value, icon, color, subText }) => (
     <div className="relative overflow-hidden bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg hover:shadow-blue-500/10 transition-all group">
@@ -30,15 +34,20 @@ export default function AdminDashboard() {
         totalUsers: 0
     });
     const [loading, setLoading] = useState(true);
-
+    const [chartData, setChartData] = useState([]);
     useEffect(() => {
         // Đợi auth load xong và đã đăng nhập mới fetch
         if (authLoading || !isAuthenticated) return;
-        
+
         const fetchStats = async () => {
             try {
-                const res = await axiosClient.get('/admin/stats');
-                setStats(res.data);
+                const [statsRes, chartRes] = await Promise.all([
+                    axiosClient.get('/admin/stats'),
+                    axiosClient.get('/admin/stats/chart')
+                ]);
+
+                setStats(statsRes.data);
+                setChartData(chartRes.data);
             } catch (error) {
                 console.error("Lỗi tải thống kê:", error);
             } finally {
@@ -51,47 +60,112 @@ export default function AdminDashboard() {
         return () => clearInterval(interval);
     }, [authLoading, isAuthenticated]);
 
-    if (loading) return <div className="p-8 text-white">Đang tải dữ liệu...</div>;
-
+    if (loading) return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+            <div className="text-blue-400 font-medium">Đang tải dữ liệu hệ thống...</div>
+        </div>
+    );
     return (
         <div className="p-6 min-h-screen bg-slate-950">
             <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-8">
                 Tổng Quan Hệ Thống
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard 
-                    title="Doanh Thu Đồ Ăn" 
-                    value={`${stats.revenue.toLocaleString()} đ`} 
-                    icon="💰" 
+                <StatCard
+                    title="Doanh Thu Đồ Ăn"
+                    value={`${stats.revenue.toLocaleString()} đ`}
+                    icon="💰"
                     color="text-green-400"
                     subText="Tổng doanh thu đơn hàng hoàn thành"
                 />
-                <StatCard 
-                    title="Máy Đang Online" 
-                    value={stats.activeComputers} 
-                    icon="🖥️" 
-                    color="text-blue-400" 
+                <StatCard
+                    title="Máy Đang Online"
+                    value={stats.activeComputers}
+                    icon="🖥️"
+                    color="text-blue-400"
                     subText="Số máy đang có người sử dụng"
                 />
-                <StatCard 
-                    title="Đơn Bếp Chờ Xử Lý" 
-                    value={stats.pendingOrders} 
-                    icon="🔥" 
+                <StatCard
+                    title="Đơn Bếp Chờ Xử Lý"
+                    value={stats.pendingOrders}
+                    icon="🔥"
                     color="text-orange-400"
-                    subText="Cần chế biến ngay" 
+                    subText="Cần chế biến ngay"
                 />
-                <StatCard 
-                    title="Tổng Hội Viên" 
-                    value={stats.totalUsers} 
-                    icon="👥" 
-                    color="text-purple-400" 
+                <StatCard
+                    title="Tổng Hội Viên"
+                    value={stats.totalUsers}
+                    icon="👥"
+                    color="text-purple-400"
                 />
             </div>
 
-            {/* Có thể thêm biểu đồ hoặc bảng nhỏ ở đây */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500">
-                <p>Khu vực biểu đồ thống kê (Đang cập nhật...)</p>
+            {/* Biểu đồ Doanh thu */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <span className="text-green-400">📈</span> Biểu Đồ Doanh Thu (7 Ngày)
+                        </h3>
+                    </div>
+
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="#94a3b8"
+                                    tick={{ fontSize: 12 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    stroke="#94a3b8"
+                                    tick={{ fontSize: 12 }}
+                                    tickFormatter={(value) => `${value / 1000}k`}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
+                                    itemStyle={{ color: '#4ade80' }}
+                                    formatter={(value) => [`${value.toLocaleString()} đ`, "Doanh thu"]}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="revenue"
+                                    stroke="#22c55e"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorRevenue)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Box phụ bên cạnh biểu đồ (Ví dụ: Thông báo nhanh) */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                    <h3 className="text-xl font-bold text-white mb-4">Hoạt động gần đây</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3 text-sm">
+                            <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500"></div>
+                            <p className="text-slate-400">Hệ thống đang hoạt động ổn định.</p>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                            <div className="w-2 h-2 mt-1.5 rounded-full bg-green-500"></div>
+                            <p className="text-slate-400">Đã cập nhật dữ liệu doanh thu mới nhất.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

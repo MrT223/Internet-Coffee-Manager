@@ -14,6 +14,10 @@ const sequelize = new Sequelize(
     timezone: "+07:00", // Vietnam timezone (UTC+7)
     dialectOptions: {
       useUTC: false, // Không dùng UTC cho đọc
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
     },
     define: {
       timestamps: true,
