@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChatNotification } from '@/context/ChatContext';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import AuthModal from '@/components/auth/AuthModal';
 import { 
   LayoutDashboard, 
@@ -17,7 +16,9 @@ import {
   UtensilsCrossed, 
   LogIn,
   Menu,
-  ArrowLeftCircle
+  ArrowLeftCircle,
+  BookOpen, // Icon cho nội quy
+  Info // Icon cho giới thiệu
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -60,7 +61,7 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop Menu */}
-            <div className="hidden md:flex space-x-8 items-center">
+            <div className="hidden md:flex space-x-6 items-center">
               {/* Nút quay lại Admin nếu admin đang xem trang chủ */}
               {adminReturnPath && (user?.role_id === 1 || user?.role_id === 2) && (
                 <button
@@ -70,22 +71,36 @@ const Navbar = () => {
                   <ArrowLeftCircle className="w-4 h-4" /> Quay lại Admin
                 </button>
               )}
-              <Link href="/" className="hover:text-blue-400 transition-colors">Trang chủ</Link>
-              <Link href="/menu" className="hover:text-blue-400 transition-colors">Dịch vụ & Menu</Link>
-              <Link href="/booking" className="hover:text-blue-400 transition-colors">Đặt máy</Link>
               
+              <Link href="/" className="hover:text-blue-400 transition-colors text-sm font-medium">Trang chủ</Link>
+              <Link href="/menu" className="hover:text-blue-400 transition-colors text-sm font-medium">Dịch vụ & Menu</Link>
+              <Link href="/booking" className="hover:text-blue-400 transition-colors text-sm font-medium">Đặt máy</Link>
+              <Link href="/rules" className="hover:text-red-400 transition-colors text-sm font-medium flex items-center gap-1">
+                 Nội quy
+              </Link>
+              <Link href="/about" className="hover:text-blue-400 transition-colors text-sm font-medium">Về chúng tôi</Link>
+              
+              {/* Demo Button - Only show when logged in but not playing */}
+              {user && user.status !== 'playing' && (
+                <Link 
+                  href="/booking?mode=simulation" 
+                  className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-full transition-all shadow-lg shadow-green-900/30"
+                >
+                  <span>🎮</span> Demo
+                </Link>
+              )}
 
               {user ? (
-                <div className="relative group">
+                <div className="relative group ml-2">
                   <button className="flex items-center space-x-2 focus:outline-none py-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold overflow-hidden border border-blue-400">
                       {user.avatar ? (
                         <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
                         user.name?.charAt(0).toUpperCase() || user.user_name?.charAt(0).toUpperCase()
                       )}
                     </div>
-                    <span>{user.name || user.user_name}</span>
+                    <span className="text-sm font-medium truncate max-w-[100px]">{user.name || user.user_name}</span>
                   </button>
                   {/* Dropdown User */}
                   <div className="absolute right-0 mt-0 w-48 bg-white text-black rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
@@ -117,7 +132,7 @@ const Navbar = () => {
                 // Nút kích hoạt Modal
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full transition-colors font-medium shadow-lg shadow-blue-500/30"
+                  className="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full transition-colors font-medium shadow-lg shadow-blue-500/30 text-sm ml-2"
                 >
                   Đăng nhập
                 </button>
@@ -154,6 +169,19 @@ const Navbar = () => {
               <Link href="/booking" className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700">
                 <Monitor className="w-4 h-4 text-cyan-400" /> Đặt máy
               </Link>
+              <Link href="/rules" className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-red-400">
+                <BookOpen className="w-4 h-4" /> Nội quy
+              </Link>
+              <Link href="/about" className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700">
+                <Info className="w-4 h-4 text-blue-400" /> Về chúng tôi
+              </Link>
+
+              {/* Demo Button for Mobile */}
+              {user && user.status !== 'playing' && (
+                <Link href="/booking?mode=simulation" className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-green-400 font-medium">
+                  <span>🎮</span> Demo: Chọn máy
+                </Link>
+              )}
               {user ? (
                 <>
                   <hr className="my-2 border-slate-700" />
