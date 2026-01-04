@@ -5,6 +5,10 @@ import * as adminController from "../controllers/adminController.js";
 
 const router = express.Router();
 
+router.get("/stats", protect, authorize([1, 2]), adminController.getDashboardStats);
+
+router.get("/stats/chart", protect, authorize([1, 2]), adminController.getRevenueChartData);
+
 router.use(protect, authorize([1]));
 
 router.get("/users", adminController.getAllUsers);
@@ -21,8 +25,4 @@ router.put("/users/:id/lock", adminController.toggleLockUser);
 
 router.put("/users/:id/reset-password", adminController.resetPassword);
 
-router.get("/stats", protect, authorize([1, 2]), adminController.getDashboardStats);
-
-router.get("/stats/chart", protect, authorize([1, 2]), adminController.getRevenueChartData);
 export default router;
-

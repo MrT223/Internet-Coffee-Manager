@@ -10,6 +10,12 @@ export const login = async (req, res) => {
     const user = await User.findOne({ where: { user_name } });
     if (!user) return res.status(404).json({ message: "Sai tên đăng nhập." });
 
+    if (user.status === 'locked') {
+      return res.status(403).json({ 
+        message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." 
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Sai mật khẩu." });
 
@@ -71,8 +77,10 @@ export const logout = async (req, res) => {
         await computer.save();
       }
 
-      user.status = "offline";
-      await user.save();
+      if (user.status !== 'locked') {
+        user.status = "offline";
+        await user.save();
+      }
     }
     res.json({ message: "Đăng xuất thành công." });
   } catch (error) {
