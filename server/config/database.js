@@ -11,16 +11,13 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || "localhost",
     dialect: "postgres",
     logging: false,
-    timezone: "+07:00", // Vietnam timezone (UTC+7)
+    timezone: "+07:00", 
     dialectOptions: {
-      useUTC: false, // Không dùng UTC cho đọc
-      // SSL chỉ bật khi DB_SSL=true (cho cloud database)
-      ...(process.env.DB_SSL === 'true' && {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      }),
+      useUTC: false,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, 
+      },
     },
     define: {
       timestamps: true,

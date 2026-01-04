@@ -1,9 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosClient from '@/api/axios';
 import { FaChevronLeft, FaChevronRight, FaGift, FaBullhorn, FaCalendarAlt } from 'react-icons/fa';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3636/api';
 
 const typeIcons = {
     announcement: FaBullhorn,
@@ -32,7 +30,7 @@ export default function PromotionBanner() {
     useEffect(() => {
         const fetchPromotions = async () => {
             try {
-                const res = await axios.get(`${API_URL}/promotions/active`);
+                const res = await axiosClient.get('/promotions/active');
                 setPromotions(res.data);
             } catch (err) {
                 console.error('Error fetching promotions:', err);
@@ -61,9 +59,11 @@ export default function PromotionBanner() {
     };
 
     if (loading) return null;
-    if (promotions.length === 0) return null;
+    if (!promotions || promotions.length === 0) return null;
 
     const currentPromo = promotions[currentIndex];
+    if (!currentPromo) return null;
+    
     const Icon = typeIcons[currentPromo.type] || FaBullhorn;
     const bgColor = typeColors[currentPromo.type] || 'from-blue-600 to-blue-800';
 
