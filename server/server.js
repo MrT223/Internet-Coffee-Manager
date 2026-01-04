@@ -24,6 +24,7 @@ import topupRoutes from "./routes/topupRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import TopupTransaction from "./models/TopupTransaction.js";
+import { cancelExpiredBookings } from "./controllers/computerController.js";
 
 dotenv.config();
 const app = express();
@@ -435,3 +436,10 @@ const startServer = async () => {
 };
 
 startServer();
+
+// --- Scheduler: Kiểm tra booking hết hạn mỗi 30 giây ---
+setInterval(() => {
+  cancelExpiredBookings();
+}, 30 * 1000); // Chạy mỗi 30 giây
+
+console.log("[Scheduler] Đã khởi động scheduler kiểm tra booking hết hạn (mỗi 30 giây)");

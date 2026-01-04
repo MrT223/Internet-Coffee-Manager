@@ -9,12 +9,14 @@ export const useChatNotification = () => useContext(ChatContext);
 
 // Shared socket instance
 let sharedSocket = null;
+let isInitialized = false; // Flag để ngăn duplicate initialization
 
 export const ChatProvider = ({ children }) => {
     const { user } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
     const [hasUnread, setHasUnread] = useState(false);
     const userRef = useRef(user);
+    const userIdRef = useRef(null); // Track user ID để detect thay đổi user thực sự
 
     const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3636";
 
@@ -28,8 +30,20 @@ export const ChatProvider = ({ children }) => {
             // Clear when logout
             setUnreadCount(0);
             setHasUnread(false);
+            isInitialized = false;
+            userIdRef.current = null;
             return;
         }
+
+        const currentUserId = user.user_id || user.id;
+        
+        // Chỉ initialize nếu chưa init HOẶC user ID thay đổi (login với user khác)
+        if (isInitialized && userIdRef.current === currentUserId) {
+            return; // Đã init rồi, không cần làm lại
+        }
+
+        userIdRef.current = currentUserId;
+        isInitialized = true;
 
         // Create or reuse socket
         if (!sharedSocket) {
@@ -41,18 +55,16 @@ export const ChatProvider = ({ children }) => {
 
         // Identify user
         sharedSocket.emit("identify", {
-            id: user.user_id || user.id,
-            user_id: user.user_id || user.id,
+            id: currentUserId,
+            user_id: currentUserId,
             name: user.user_name || user.name,
             user_name: user.user_name || user.name,
             role_id: user.role_id
         });
 
-        // Request unread count from server (persistent từ database)
-        setTimeout(() => {
-            console.log('[ChatContext] Requesting unread count...');
-            sharedSocket.emit("get_unread_count");
-        }, 500);
+        // Request unread count from server - CHỈ 1 LẦN
+        console.log('[ChatContext] Requesting unread count...');
+        sharedSocket.emit("get_unread_count");
 
         // Listen for unread count from server
         const handleUnreadCount = (count) => {

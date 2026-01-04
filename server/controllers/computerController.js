@@ -1,6 +1,7 @@
 import Computer from "../models/Computer.js";
 import User from "../models/User.js";
 import sequelize from "../config/database.js";
+import { Op } from "sequelize";
 
 export const getAllComputers = async (req, res) => {
   try {
@@ -115,6 +116,7 @@ export const bookComputer = async (req, res) => {
 
     computer.status = "dat truoc";
     computer.current_user_id = userId;
+    computer.session_start_time = new Date(); // Lưu thời điểm đặt máy
     await computer.save();
 
     res.json({
@@ -415,5 +417,37 @@ export const endSession = async (req, res) => {
     await t.rollback();
     console.error("Lỗi endSession:", error);
     res.status(500).json({ message: "Lỗi kết thúc phiên." });
+  }
+};
+
+// --- Hủy booking hết hạn (chạy bởi scheduler) ---
+const BOOKING_TIMEOUT = 60 * 60 * 1000; // 1 tiếng
+
+export const cancelExpiredBookings = async () => {
+  const now = new Date();
+
+  try {
+    const expiredBookings = await Computer.findAll({
+      where: {
+        status: "dat truoc",
+        session_start_time: {
+          [Op.lt]: new Date(now.getTime() - BOOKING_TIMEOUT),
+        },
+      },
+    });
+
+    for (const computer of expiredBookings) {
+      console.log(`[Scheduler] Hủy đặt máy hết hạn: ${computer.computer_name} (ID: ${computer.computer_id})`);
+      computer.status = "trong";
+      computer.current_user_id = null;
+      computer.session_start_time = null;
+      await computer.save();
+    }
+
+    if (expiredBookings.length > 0) {
+      console.log(`[Scheduler] Đã hủy ${expiredBookings.length} đặt chỗ hết hạn (không hoàn tiền)`);
+    }
+  } catch (error) {
+    console.error("[Scheduler] Lỗi khi hủy đặt chỗ hết hạn:", error);
   }
 };

@@ -28,8 +28,6 @@ const ComputerMap = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     
-    // Check mode từ URL (?mode=simulation)
-    const isSimulationMode = searchParams.get('mode') === 'simulation';
 
     const [computers, setComputers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -91,8 +89,6 @@ const ComputerMap = () => {
     const handleComputerClick = (comp) => {
         if (canManage) {
             setAdminModal({ show: true, computer: comp });
-        } else if (isSimulationMode) {
-            handleSimulationLogin(comp);
         } else if (isUser) {
             // Cho phép vào máy trống HOẶC máy đã đặt của chính mình
             const currentUserId = parseInt(user.user_id || user.id);
@@ -103,52 +99,14 @@ const ComputerMap = () => {
                 // Máy trống - hiện modal đặt máy
                 setUserModal({ show: true, computer: comp });
             } else if (isMyReservation) {
-                // Máy đã đặt của mình - cho phép vào (gọi startSession)
-                handleSimulationLogin(comp);
+                // Máy đã đặt của mình - thông báo đã đặt rồi
+                toast.info(`Bạn đã đặt máy ${comp.computer_name}. Vui lòng đến quán để sử dụng.`);
             } else {
                 toast.warning("Máy này không khả dụng!");
             }
         }
     };
 
-    // 3. Giả lập đăng nhập / Vào máy đã đặt
-    const handleSimulationLogin = async (comp) => {
-        const currentUserId = parseInt(user.user_id || user.id);
-        const reservedById = parseInt(comp.CurrentUser?.user_id || comp.current_user_id);
-        
-        if (comp.status !== "trong" && comp.status !== "dat truoc") {
-            return toast.warning("Chỉ có thể vào máy Trống hoặc máy Đã đặt!");
-        }
-        if (comp.status === "dat truoc" && reservedById !== currentUserId) {
-            return toast.error("Máy này đã được người khác đặt!");
-        }
-
-        const confirmed = await confirm({
-            title: comp.status === "dat truoc" ? 'Vào máy đã đặt?' : 'Bắt đầu phiên chơi?',
-            message: `Bạn muốn ngồi vào máy ${comp.computer_name}?`,
-            type: 'default',
-            confirmText: 'Vào máy',
-            cancelText: 'Hủy',
-        });
-        if (!confirmed) return;
-
-        try {
-            const res = await axiosClient.post("/computers/start-session", { 
-                computerId: comp.computer_id, 
-                userId: currentUserId
-            });
-            
-            toast.success(res.data.message);
-            
-            if (res.data.new_balance !== undefined) updateUserBalance(res.data.new_balance);
-            if (res.data.new_status !== undefined) updateUserStatus(res.data.new_status);
-            
-            fetchComputers();
-            router.push("/dashboard");
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Lỗi kết nối");
-        }
-    };
 
     // 4. User Đặt máy (Booking)
     const confirmBooking = async () => {
@@ -241,7 +199,7 @@ const ComputerMap = () => {
             <div className="w-full max-w-[900px] flex flex-col sm:flex-row justify-between items-center mb-2 bg-slate-900 p-3 rounded-lg shadow-lg border border-slate-800 gap-2">
                 
                 <h2 className="text-base md:text-lg font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                    {isSimulationMode ? "🎮 Giả Lập Client" : "🗺️ Sơ Đồ Phòng Máy"}
+                    🗺️ Sơ Đồ Phòng Máy
                 </h2>
 
                 <div className="flex gap-3 text-[10px] font-bold">

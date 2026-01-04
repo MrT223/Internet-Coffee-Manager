@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import axiosClient from '@/api/axios';
 
@@ -16,6 +16,10 @@ export const GameSessionProvider = ({ children }) => {
   const [remainingTime, setRemainingTime] = useState(0); // milliseconds
   const [effectiveBalance, setEffectiveBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Ref để ngăn fetch liên tục
+  const lastBalanceRef = useRef(null);
+  const hasFetchedRef = useRef(false);
 
   // Fetch session từ server
   const fetchSession = useCallback(async () => {
@@ -25,8 +29,9 @@ export const GameSessionProvider = ({ children }) => {
       const res = await axiosClient.get('/computers/my-session');
       const data = res.data;
       
-      // Luôn cập nhật balance từ server để đồng bộ (bao gồm cả sau khi hoàn tiền)
-      if (data.balance !== undefined) {
+      // Chỉ update balance nếu thực sự thay đổi để tránh infinite loop
+      if (data.balance !== undefined && data.balance !== lastBalanceRef.current) {
+        lastBalanceRef.current = data.balance;
         updateUserBalance(data.balance);
       }
       
@@ -48,10 +53,17 @@ export const GameSessionProvider = ({ children }) => {
     }
   }, [isAuthenticated, updateUserBalance]);
 
-  // Fetch session khi mount và khi user thay đổi
+  // Fetch session khi mount - CHỈ 1 LẦN
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchSession();
+    }
+    
+    // Reset khi logout
+    if (!isAuthenticated) {
+      hasFetchedRef.current = false;
+      lastBalanceRef.current = null;
     }
   }, [isAuthenticated, user, fetchSession]);
 

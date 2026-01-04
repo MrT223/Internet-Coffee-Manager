@@ -19,6 +19,7 @@ const ChatWidget = ({ user: propUser }) => {
   const [unreadCounts, setUnreadCounts] = useState(new Map()); // Map<id, count>
   const [lastActivity, setLastActivity] = useState(new Map()); // Map<id, timestamp>
   const socketRef = useRef(null);
+  const initRef = useRef(false); // Track initialization
 
   const messagesEndRef = useRef(null);
   const safeId = (id) => String(id);
@@ -29,125 +30,130 @@ const ChatWidget = ({ user: propUser }) => {
   const userConversationId = isUser && selectedAdminId ? `${user.user_id || user.id}_${selectedAdminId}` : null;
 
   useEffect(() => {
-    if (user && getSocket) {
-      // Dùng shared socket từ ChatContext
-      const socket = getSocket();
-      socketRef.current = socket;
+    if (!user || !getSocket) return;
+    
+    // Ngăn duplicate initialization
+    if (initRef.current) return;
+    initRef.current = true;
+    
+    // Dùng shared socket từ ChatContext
+    const socket = getSocket();
+    socketRef.current = socket;
 
-      socket.emit("identify", {
-        id: user.user_id || user.id,
-        user_id: user.user_id || user.id,
-        name: user.user_name || user.name,
-        user_name: user.user_name || user.name,
-        role_id: user.role_id
+    socket.emit("identify", {
+      id: user.user_id || user.id,
+      user_id: user.user_id || user.id,
+      name: user.user_name || user.name,
+      user_name: user.user_name || user.name,
+      role_id: user.role_id
+    });
+
+    socket.on("receive_message", (msg) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.message_id === msg.message_id)) return prev;
+        return [...prev, msg];
       });
-
-      socket.on("receive_message", (msg) => {
-        setMessages((prev) => {
-          if (prev.some((m) => m.message_id === msg.message_id)) return prev;
-          return [...prev, msg];
-        });
-        
-        // Đánh dấu tin nhắn mới
-        if (!isOpen) setHasNewMsg(true);
-        
-        // Track unread count và last activity
-        if (msg.conversation_id) {
-          const myId = String(user?.user_id || user?.id);
-          const now = Date.now();
-          
-          // Admin: nếu tin từ user (role_id = 3)
-          if (isAdmin && msg.role_id === 3) {
-            const convId = msg.conversation_id;
-            // Update unread count nếu không đang xem conversation đó
-            if (convId !== activeChatId) {
-              setUnreadCounts(prev => {
-                const newMap = new Map(prev);
-                newMap.set(convId, (prev.get(convId) || 0) + 1);
-                return newMap;
-              });
-            }
-            // Update last activity
-            setLastActivity(prev => {
-              const newMap = new Map(prev);
-              newMap.set(convId, now);
-              return newMap;
-            });
-          }
-          
-          // User: nếu tin từ admin
-          if (isUser && msg.role_id !== 3) {
-            const adminIdFromMsg = msg.conversation_id.split('_')[1];
-            // Update unread count nếu không đang xem admin đó
-            if (adminIdFromMsg !== String(selectedAdminId)) {
-              setUnreadCounts(prev => {
-                const newMap = new Map(prev);
-                newMap.set(adminIdFromMsg, (prev.get(adminIdFromMsg) || 0) + 1);
-                return newMap;
-              });
-            }
-            // Update last activity
-            setLastActivity(prev => {
-              const newMap = new Map(prev);
-              newMap.set(adminIdFromMsg, now);
-              return newMap;
-            });
-          }
-        }
-      });
-
-      socket.on("history_loaded", (msgs) => {
-        setMessages(msgs);
-      });
-
-      socket.on("conversations_list", (list) => {
-        setUserList(list);
-      });
-
-      socket.on("all_admins", (list) => {
-        setAllAdmins(list);
-      });
-
-      // Admin nhận thông báo conversation mới
-      socket.on("new_conversation", (conv) => {
-        setUserList((prev) => {
-          if (prev.some(c => c.id === conv.id)) return prev;
-          return [...prev, { id: conv.id, name: conv.user_name, user_id: conv.user_id }];
-        });
-      });
-
-      // Nhận unread details từ server
-      socket.on("unread_details", (details) => {
-        console.log("[ChatWidget] Received unread_details:", details);
-        const newCounts = new Map();
-        const newActivity = new Map();
-        for (const [key, value] of Object.entries(details)) {
-          newCounts.set(key, value.count);
-          newActivity.set(key, value.lastTime);
-        }
-        setUnreadCounts(newCounts);
-        setLastActivity(newActivity);
-      });
-
-      // Load dữ liệu ban đầu
-      if (isUser) {
-        socket.emit("get_all_admins");
-      } else if (isAdmin) {
-        socket.emit("get_my_conversations");
-      }
       
-      // Load unread details từ server
-      socket.emit("get_unread_details");
+      // Đánh dấu tin nhắn mới
+      if (!isOpen) setHasNewMsg(true);
+      
+      // Track unread count và last activity
+      if (msg.conversation_id) {
+        const myId = String(user?.user_id || user?.id);
+        const now = Date.now();
+        
+        // Admin: nếu tin từ user (role_id = 3)
+        if (isAdmin && msg.role_id === 3) {
+          const convId = msg.conversation_id;
+          // Update unread count nếu không đang xem conversation đó
+          if (convId !== activeChatId) {
+            setUnreadCounts(prev => {
+              const newMap = new Map(prev);
+              newMap.set(convId, (prev.get(convId) || 0) + 1);
+              return newMap;
+            });
+          }
+          // Update last activity
+          setLastActivity(prev => {
+            const newMap = new Map(prev);
+            newMap.set(convId, now);
+            return newMap;
+          });
+        }
+        
+        // User: nếu tin từ admin
+        if (isUser && msg.role_id !== 3) {
+          const adminIdFromMsg = msg.conversation_id.split('_')[1];
+          // Update unread count nếu không đang xem admin đó
+          if (adminIdFromMsg !== String(selectedAdminId)) {
+            setUnreadCounts(prev => {
+              const newMap = new Map(prev);
+              newMap.set(adminIdFromMsg, (prev.get(adminIdFromMsg) || 0) + 1);
+              return newMap;
+            });
+          }
+          // Update last activity
+          setLastActivity(prev => {
+            const newMap = new Map(prev);
+            newMap.set(adminIdFromMsg, now);
+            return newMap;
+          });
+        }
+      }
+    });
 
-      return () => {
-        socket.off("receive_message");
-        socket.off("history_loaded");
-        socket.off("conversations_list");
-        socket.off("all_admins");
-        socket.off("new_conversation");
-        socket.off("unread_details");
-      };
+    socket.on("history_loaded", (msgs) => {
+      setMessages(msgs);
+    });
+
+    socket.on("conversations_list", (list) => {
+      setUserList(list);
+    });
+
+    socket.on("all_admins", (list) => {
+      setAllAdmins(list);
+    });
+
+    // Admin nhận thông báo conversation mới
+    socket.on("new_conversation", (conv) => {
+      setUserList((prev) => {
+        if (prev.some(c => c.id === conv.id)) return prev;
+        return [...prev, { id: conv.id, name: conv.user_name, user_id: conv.user_id }];
+      });
+    });
+
+    // Nhận unread details từ server
+    socket.on("unread_details", (details) => {
+      console.log("[ChatWidget] Received unread_details:", details);
+      const newCounts = new Map();
+      const newActivity = new Map();
+      for (const [key, value] of Object.entries(details)) {
+        newCounts.set(key, value.count);
+        newActivity.set(key, value.lastTime);
+      }
+      setUnreadCounts(newCounts);
+      setLastActivity(newActivity);
+    });
+
+    // Load dữ liệu ban đầu
+    if (isUser) {
+      socket.emit("get_all_admins");
+    } else if (isAdmin) {
+      socket.emit("get_my_conversations");
     }
+      
+    // Load unread details từ server
+    socket.emit("get_unread_details");
+
+    return () => {
+      socket.off("receive_message");
+      socket.off("history_loaded");
+      socket.off("conversations_list");
+      socket.off("all_admins");
+      socket.off("new_conversation");
+      socket.off("unread_details");
+      initRef.current = false; // Reset khi unmount
+    };
   }, [user, getSocket, isOpen, isAdmin, isUser]);
 
   useEffect(() => {

@@ -98,17 +98,12 @@ export default function MenuPage() {
                             Nhân viên sẽ mang đồ đến tận nơi cho bạn.
                         </p>
                         <Link 
-                            href="/booking?mode=simulation" 
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg"
+                            href="/booking" 
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg"
                         >
                             <Monitor className="w-5 h-5" />
-                            Chọn máy để chơi (Demo)
+                            Đặt máy ngay
                         </Link>
-                        <div className="mt-4">
-                            <Link href="/booking" className="text-blue-400 text-sm hover:underline">
-                                Hoặc đặt trước máy →
-                            </Link>
-                        </div>
                     </div>
                 </div>
             )}

@@ -218,32 +218,16 @@ export default function TopupPage() {
                         );
                     })}
                 </div>
+
+                        {/* Continue Button */}
                         {!currentTx && (
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                                <h2 className="text-lg font-bold text-white mb-4">Chọn mệnh giá</h2>
-                                <div className="grid grid-cols-3 gap-3 mb-6">
-                                    {AMOUNTS.map(amt => (
-                                        <button
-                                            key={amt.value}
-                                            onClick={() => setSelectedAmount(amt.value)}
-                                            className={`py-4 rounded-xl font-bold text-lg transition-all ${
-                                                selectedAmount === amt.value
-                                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-900/30'
-                                                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                            }`}
-                                        >
-                                            {amt.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <button
-                                    onClick={handleCreateTopup}
-                                    disabled={!selectedAmount || loading}
-                                    className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-green-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? 'Đang xử lý...' : 'TIẾP TỤC →'}
-                                </button>
-                            </div>
+                            <button
+                                onClick={handleCreateTopup}
+                                disabled={!selectedAmount || loading}
+                                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-green-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Đang xử lý...' : 'TIẾP TỤC →'}
+                            </button>
                         )}
 
                         {/* Hiển thị QR Code */}

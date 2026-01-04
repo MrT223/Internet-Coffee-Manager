@@ -49,8 +49,8 @@ export const createTopup = async (req, res) => {
       bankInfo: {
         bankName: "MB Bank",
         bankId: "970422",
-        accountNumber: "0966846502",
-        accountName: "NGUYEN TUAN ANH",
+        accountNumber: "696969696969",
+        accountName: "NGO QUANG KHAM",
         content: `CYBEROPS ${transactionCode}`,
       },
     });
@@ -198,8 +198,8 @@ export const getPendingTopup = async (req, res) => {
       bankInfo: {
         bankName: "MB Bank",
         bankId: "970422",
-        accountNumber: "0966846502",
-        accountName: "NGUYEN TUAN ANH",
+        accountNumber: "696969696969",
+        accountName: "NGO QUANG KHAM",
         content: `CYBEROPS ${tx.transaction_code}`,
       },
     });
