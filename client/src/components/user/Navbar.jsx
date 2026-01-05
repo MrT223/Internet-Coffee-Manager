@@ -79,16 +79,7 @@ const Navbar = () => {
                  Nội quy
               </Link>
               <Link href="/about" className="hover:text-blue-400 transition-colors text-sm font-medium">Về chúng tôi</Link>
-              
-              {/* Demo Button - Only show when logged in but not playing */}
-              {user && user.status !== 'playing' && (
-                <Link 
-                  href="/booking?mode=simulation" 
-                  className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-full transition-all shadow-lg shadow-green-900/30"
-                >
-                  <span>🎮</span> Demo
-                </Link>
-              )}
+
 
               {user ? (
                 <div className="relative group ml-2">
@@ -176,12 +167,6 @@ const Navbar = () => {
                 <Info className="w-4 h-4 text-blue-400" /> Về chúng tôi
               </Link>
 
-              {/* Demo Button for Mobile */}
-              {user && user.status !== 'playing' && (
-                <Link href="/booking?mode=simulation" className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 text-green-400 font-medium">
-                  <span>🎮</span> Demo: Chọn máy
-                </Link>
-              )}
               {user ? (
                 <>
                   <hr className="my-2 border-slate-700" />
