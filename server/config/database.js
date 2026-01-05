@@ -14,14 +14,10 @@ const sequelize = new Sequelize(
     timezone: "+07:00", 
     dialectOptions: {
       useUTC: false,
-      // SSL disabled for local development
-      // For production, set DB_SSL=true in .env
-      ...(process.env.DB_SSL === 'true' && {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      }),
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, 
+      },
     },
     define: {
       timestamps: true,
