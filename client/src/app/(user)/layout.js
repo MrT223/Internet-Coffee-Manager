@@ -1,5 +1,6 @@
 'use client';
 import ChatWidget from '@/components/user/ChatWidget';
+import AIChatWidget from '@/components/user/AIChatWidget';
 import Navbar from '@/components/user/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { GameSessionProvider } from '@/context/GameSessionContext';
@@ -16,6 +17,8 @@ export default function UserLayout({ children }) {
                 </main>
                 {/* Widget chat luôn hiển thị */}
                 {user && <ChatWidget user={user} />}
+                {/* AI Chatbot */}
+                <AIChatWidget />
             </div>
         </GameSessionProvider>
     );
