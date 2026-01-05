@@ -28,24 +28,26 @@ const AIChatWidget = () => {
     setLoading(true);
 
     try {
-      const res = await axiosClient.post('/ai/chat', { 
-        message: userMessage 
+      const res = await axiosClient.post('/ai/chat', {
+        message: userMessage
       });
 
-      const data = await res.json();
+      const data = res;
+      const responseData = res.data || res;
 
-      if (data.success) {
-        setMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
+      if (responseData.success) {
+        setMessages(prev => [...prev, { role: 'ai', content: responseData.reply }]);
       } else {
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          content: data.error || 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.' 
+        setMessages(prev => [...prev, {
+          role: 'ai',
+          content: responseData.error || 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.'
         }]);
       }
     } catch (error) {
-      setMessages(prev => [...prev, { 
-        role: 'ai', 
-        content: 'Không thể kết nối đến server. Vui lòng thử lại sau.' 
+      console.error(error); // Log lỗi ra để xem
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: 'Không thể kết nối đến server. Vui lòng thử lại sau.'
       }]);
     } finally {
       setLoading(false);
@@ -54,9 +56,9 @@ const AIChatWidget = () => {
 
   return (
     <div className="fixed bottom-5 left-5 z-[9998] flex flex-col items-start pointer-events-none">
-      
+
       {/* Chat Window */}
-      <div 
+      <div
         className={`
           bg-slate-900 border border-emerald-500/50 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] 
           mb-4 overflow-hidden flex flex-col transition-all duration-300 origin-bottom-left pointer-events-auto
@@ -78,11 +80,11 @@ const AIChatWidget = () => {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-              <div 
+              <div
                 className={`
                   max-w-[85%] px-4 py-2 rounded-2xl text-sm shadow-md break-words whitespace-pre-wrap
-                  ${msg.role === 'user' 
-                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-br-none' 
+                  ${msg.role === 'user'
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-br-none'
                     : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
                   }
                 `}
@@ -91,7 +93,7 @@ const AIChatWidget = () => {
               </div>
             </div>
           ))}
-          
+
           {loading && (
             <div className="flex items-start">
               <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-bl-none px-4 py-2 flex items-center gap-2">
@@ -100,7 +102,7 @@ const AIChatWidget = () => {
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -113,8 +115,8 @@ const AIChatWidget = () => {
             placeholder="Hỏi AI về giá, menu, khuyến mãi..."
             disabled={loading}
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={!input.trim() || loading}
             className="p-2 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-transform active:scale-95"
           >
@@ -124,7 +126,7 @@ const AIChatWidget = () => {
       </div>
 
       {/* Toggle Button */}
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
           relative w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(16,185,129,0.4)] pointer-events-auto
