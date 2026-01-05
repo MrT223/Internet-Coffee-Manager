@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Loader2 } from 'lucide-react';
+import axiosClient from '../../api/axios';
 
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,8 +11,6 @@ const AIChatWidget = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3636';
 
   useEffect(() => {
     if (isOpen) {
@@ -29,10 +28,8 @@ const AIChatWidget = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage })
+      const res = await axiosClient.post('/ai/chat', { 
+        message: userMessage 
       });
 
       const data = await res.json();
