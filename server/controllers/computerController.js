@@ -389,7 +389,6 @@ export const endSession = async (req, res) => {
       userBalance: user.balance,
     });
 
-    // Trừ tiền thực sự
     const newBalance = Math.max(0, user.balance - totalCost);
     user.balance = newBalance;
     user.status = "online";
@@ -420,8 +419,7 @@ export const endSession = async (req, res) => {
   }
 };
 
-// --- Hủy booking hết hạn (chạy bởi scheduler) ---
-const BOOKING_TIMEOUT = 60 * 60 * 1000; // 1 tiếng
+const BOOKING_TIMEOUT = 60 * 60 * 1000;
 
 export const cancelExpiredBookings = async () => {
   const now = new Date();
