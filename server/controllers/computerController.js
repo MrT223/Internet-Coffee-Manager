@@ -283,8 +283,27 @@ export const getActiveSession = async (req, res) => {
     }
 
     if (user.status !== "playing") {
+      // Kiểm tra xem user có máy đang đặt trước không
+      const bookedComputer = await Computer.findOne({
+        where: { current_user_id: userId, status: "dat truoc" }
+      });
+      
+      if (bookedComputer) {
+        return res.json({
+          isPlaying: false,
+          hasBooking: true,
+          status: user.status,
+          balance: user.balance,
+          bookedComputer: {
+            id: bookedComputer.computer_id,
+            name: bookedComputer.computer_name,
+          }
+        });
+      }
+      
       return res.json({
         isPlaying: false,
+        hasBooking: false,
         status: user.status,
         balance: user.balance,
       });

@@ -13,6 +13,7 @@ export const GameSessionProvider = ({ children }) => {
   const { user, isAuthenticated, updateUserBalance, updateUserStatus, clearSession } = useAuth();
   
   const [sessionInfo, setSessionInfo] = useState(null);
+  const [bookedComputer, setBookedComputer] = useState(null); // Máy đã đặt trước
   const [remainingTime, setRemainingTime] = useState(0); // milliseconds
   const [effectiveBalance, setEffectiveBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +37,7 @@ export const GameSessionProvider = ({ children }) => {
       }
       
       if (data.isPlaying) {
+        setBookedComputer(null);
         setSessionInfo({
           computer: data.computer,
           sessionStartTime: new Date(data.sessionStartTime),
@@ -43,8 +45,15 @@ export const GameSessionProvider = ({ children }) => {
         });
         setRemainingTime(data.remainingTimeMs);
         setEffectiveBalance(data.effectiveBalance);
+      } else if (data.hasBooking && data.bookedComputer) {
+        // User có máy đặt trước nhưng chưa vào chơi
+        setSessionInfo(null);
+        setBookedComputer(data.bookedComputer);
+        setRemainingTime(0);
+        setEffectiveBalance(data.balance || 0);
       } else {
         setSessionInfo(null);
+        setBookedComputer(null);
         setRemainingTime(0);
         setEffectiveBalance(data.balance || 0);
       }
@@ -128,6 +137,47 @@ export const GameSessionProvider = ({ children }) => {
     }
   };
 
+  // Start session (vào chơi từ máy đã đặt trước)
+  const startSession = async () => {
+    if (!bookedComputer) return { success: false, message: 'Không có máy đặt trước' };
+    // user.id từ AuthContext (server trả về id, không phải user_id)
+    const userId = user?.id || user?.user_id;
+    if (!user || !userId) return { success: false, message: 'Chưa đăng nhập' };
+    
+    console.log('[StartSession] computerId:', bookedComputer.id, 'userId:', userId);
+    
+    setIsLoading(true);
+    try {
+      const res = await axiosClient.post('/computers/start-session', {
+        computerId: bookedComputer.id,
+        userId: userId,
+      });
+      
+      if (res.data.new_balance !== undefined) {
+        updateUserBalance(res.data.new_balance);
+      }
+      if (res.data.new_status) {
+        updateUserStatus(res.data.new_status);
+      }
+      
+      // Refresh session
+      setBookedComputer(null);
+      await fetchSession();
+      
+      return {
+        success: true,
+        message: res.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Lỗi bắt đầu phiên',
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Format remaining time thành HH:MM:SS
   const formatRemainingTime = () => {
     const totalSeconds = Math.floor(remainingTime / 1000);
@@ -140,14 +190,17 @@ export const GameSessionProvider = ({ children }) => {
 
   const contextValue = {
     sessionInfo,
+    bookedComputer,
     remainingTime,
     effectiveBalance,
     isPlaying: !!sessionInfo,
+    hasBooking: !!bookedComputer,
     isLoading,
     ratePerHour: RATE_PER_HOUR,
     formatRemainingTime,
     fetchSession,
     endSession,
+    startSession,
   };
 
   return (

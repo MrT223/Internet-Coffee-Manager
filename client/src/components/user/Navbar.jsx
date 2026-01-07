@@ -2,8 +2,10 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useGameSession } from '@/context/GameSessionContext';
 import { useChatNotification } from '@/context/ChatContext';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/context/ToastContext';
 import AuthModal from '@/components/auth/AuthModal';
 import { 
   LayoutDashboard, 
@@ -17,13 +19,16 @@ import {
   LogIn,
   Menu,
   ArrowLeftCircle,
-  BookOpen, // Icon cho nội quy
-  Info // Icon cho giới thiệu
+  BookOpen,
+  Info,
+  Play
 } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { hasBooking, bookedComputer, startSession, isLoading } = useGameSession();
   const { hasUnread, unreadCount, clearUnread } = useChatNotification() || {};
+  const { toast } = useToast();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -47,6 +52,16 @@ const Navbar = () => {
     sessionStorage.removeItem('adminLastPath');
     setAdminReturnPath(null);
     router.push(path);
+  };
+
+  // Hàm vào chơi
+  const handleStartPlaying = async () => {
+    const result = await startSession();
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   return (
@@ -80,8 +95,17 @@ const Navbar = () => {
               </Link>
               <Link href="/about" className="hover:text-blue-400 transition-colors text-sm font-medium">Về chúng tôi</Link>
 
-
-              {user ? (
+              {/* Nút Vào Chơi khi có máy đặt trước */}
+              {hasBooking && bookedComputer && (
+                <button
+                  onClick={handleStartPlaying}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white text-sm font-bold rounded-full transition-all shadow-lg shadow-green-900/40 animate-pulse disabled:opacity-50"
+                >
+                  <Play className="w-4 h-4" />
+                  Vào chơi {bookedComputer.name} (demo)
+                </button>
+              )}              {user ? (
                 <div className="relative group ml-2">
                   <button className="flex items-center space-x-2 focus:outline-none py-2">
                     <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold overflow-hidden border border-blue-400">
