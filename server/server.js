@@ -63,6 +63,10 @@ OrderDetail.belongsTo(MenuItem, { foreignKey: "item_id" });
 User.hasMany(Computer, { foreignKey: "current_user_id" });
 Computer.belongsTo(User, { foreignKey: "current_user_id", as: "CurrentUser" });
 
+// Add TopupTransaction association
+User.hasMany(TopupTransaction, { foreignKey: "user_id" });
+TopupTransaction.belongsTo(User, { foreignKey: "user_id" });
+
 // Lưu trữ online admins: Map<socketId, {id, name, role_id}>
 const onlineAdmins = new Map();
 

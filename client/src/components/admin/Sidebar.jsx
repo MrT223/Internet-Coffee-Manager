@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useChatNotification } from '@/context/ChatContext';
+import { useState, useEffect } from 'react';
+import axiosClient from '@/api/axios';
 
 const menuItems = [
     { name: 'Tổng quan', href: '/admin', icon: '📊' },
@@ -10,6 +12,7 @@ const menuItems = [
     { name: 'Quản lý Menu', href: '/admin/menu', icon: '🍔' },
     { name: 'Đơn hàng (Bếp)', href: '/admin/orders', icon: '🔔' },
     { name: 'Hội viên & Nạp tiền', href: '/admin/users', icon: '👥' },
+    { name: 'Giao dịch Nạp tiền', href: '/admin/topups', icon: '💳', hasPendingCash: true },
     { name: 'Khuyến mãi', href: '/admin/promotions', icon: '🎁' },
     { name: 'Hỗ trợ Chat', href: '/admin/chat', icon: '💬', hasNotification: true },
     { name: 'Cài đặt', href: '/admin/settings', icon: '⚙️' },
@@ -18,8 +21,30 @@ const menuItems = [
 const Sidebar = ({ isOpen }) => {
     const pathname = usePathname();
     const router = useRouter();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const { hasUnread, unreadCount, clearUnread } = useChatNotification() || {};
+    
+    // State for pending cash topups
+    const [pendingCashCount, setPendingCashCount] = useState(0);
+
+    // Fetch pending cash count
+    useEffect(() => {
+        if (!user || (user.role_id !== 1 && user.role_id !== 2)) return;
+        
+        const fetchPendingCash = async () => {
+            try {
+                const res = await axiosClient.get('/topup/admin/pending-cash');
+                setPendingCashCount(res.data.length);
+            } catch (e) {
+                // Silent fail
+            }
+        };
+        
+        fetchPendingCash();
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchPendingCash, 30000);
+        return () => clearInterval(interval);
+    }, [user]);
 
     const handleChatClick = () => {
         if (clearUnread) clearUnread();
@@ -49,7 +74,8 @@ const Sidebar = ({ isOpen }) => {
             <nav className="flex-1 py-6 space-y-1 overflow-y-auto custom-scrollbar">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href;
-                    const showBadge = item.hasNotification && hasUnread && !isActive;
+                    const showChatBadge = item.hasNotification && hasUnread && !isActive;
+                    const showCashBadge = item.hasPendingCash && pendingCashCount > 0 && !isActive;
                     
                     return (
                         <Link 
@@ -65,16 +91,26 @@ const Sidebar = ({ isOpen }) => {
                         >
                             <span className="mr-3 text-xl relative">
                                 {item.icon}
-                                {/* Chấm đỏ trên icon */}
-                                {showBadge && (
+                                {/* Chấm đỏ trên icon - Chat */}
+                                {showChatBadge && (
+                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>
+                                )}
+                                {/* Chấm đỏ trên icon - Pending Cash */}
+                                {showCashBadge && (
                                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>
                                 )}
                             </span>
                             <span className="font-medium flex-1">{item.name}</span>
                             {/* Badge số tin nhắn */}
-                            {showBadge && unreadCount > 0 && (
+                            {showChatBadge && unreadCount > 0 && (
                                 <span className="min-w-[20px] h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1.5">
                                     {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                            {/* Badge số pending cash */}
+                            {showCashBadge && (
+                                <span className="min-w-[20px] h-5 flex items-center justify-center bg-yellow-500 text-black text-xs font-bold rounded-full px-1.5">
+                                    {pendingCashCount > 9 ? '9+' : pendingCashCount}
                                 </span>
                             )}
                         </Link>

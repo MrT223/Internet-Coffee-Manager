@@ -260,3 +260,136 @@ export const createCashTopup = async (req, res) => {
     res.status(500).json({ message: "Lỗi tạo giao dịch." });
   }
 };
+
+// =====================================================
+// ADMIN FUNCTIONS
+// =====================================================
+
+// Lấy tất cả giao dịch nạp tiền (Admin)
+export const getAllTopups = async (req, res) => {
+  try {
+    const transactions = await TopupTransaction.findAll({
+      order: [["created_at", "DESC"]],
+      limit: 100,
+      include: [{
+        model: User,
+        attributes: ['user_id', 'user_name'],
+      }]
+    });
+
+    res.json(transactions);
+  } catch (error) {
+    console.error("Lỗi lấy danh sách topup:", error);
+    res.status(500).json({ message: "Lỗi lấy danh sách giao dịch." });
+  }
+};
+
+// Lấy các giao dịch tiền mặt đang pending (Admin)
+export const getPendingCashTopups = async (req, res) => {
+  try {
+    const transactions = await TopupTransaction.findAll({
+      where: { payment_method: "cash", status: "pending" },
+      order: [["created_at", "DESC"]],
+      include: [{
+        model: User,
+        attributes: ['user_id', 'user_name'],
+      }]
+    });
+
+    res.json(transactions);
+  } catch (error) {
+    console.error("Lỗi lấy pending cash topups:", error);
+    res.status(500).json({ message: "Lỗi lấy danh sách giao dịch." });
+  }
+};
+
+// Admin xác nhận giao dịch tiền mặt
+export const adminConfirmCashTopup = async (req, res) => {
+  const { id } = req.params;
+  const adminId = req.user.user_id;
+
+  const t = await sequelize.transaction();
+
+  try {
+    const tx = await TopupTransaction.findOne({
+      where: { transaction_id: id, payment_method: "cash", status: "pending" },
+    });
+
+    if (!tx) {
+      await t.rollback();
+      return res.status(404).json({ message: "Giao dịch không tồn tại hoặc đã xử lý." });
+    }
+
+    // Kiểm tra khuyến mãi áp dụng
+    const now = new Date();
+    const activePromotion = await Promotion.findOne({
+      where: {
+        type: 'topup_bonus',
+        is_active: true,
+        start_date: { [Op.lte]: now },
+        end_date: { [Op.gte]: now },
+        min_amount: { [Op.lte]: tx.amount }
+      },
+      order: [['bonus_percent', 'DESC']],
+      transaction: t
+    });
+
+    let bonusAmount = 0;
+    if (activePromotion) {
+      bonusAmount = Math.floor(tx.amount * activePromotion.bonus_percent / 100);
+    }
+
+    // Cập nhật balance user
+    const user = await User.findByPk(tx.user_id, { transaction: t });
+    const totalAmount = parseInt(tx.amount) + parseInt(bonusAmount);
+    user.balance = parseInt(user.balance) + totalAmount;
+    await user.save({ transaction: t });
+
+    // Cập nhật trạng thái giao dịch
+    tx.status = "success";
+    tx.confirmed_at = new Date();
+    await tx.save({ transaction: t });
+
+    await t.commit();
+
+    console.log(`[Admin ${adminId}] Confirmed cash topup ${tx.transaction_code} - ${tx.amount}đ for user ${tx.user_id}`);
+
+    res.json({
+      message: `Đã xác nhận nạp ${tx.amount.toLocaleString('vi-VN')}đ cho ${user.user_name}`,
+      transaction: {
+        id: tx.transaction_id,
+        code: tx.transaction_code,
+        amount: tx.amount,
+        bonus: bonusAmount,
+        status: tx.status,
+      },
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error("Lỗi admin confirm topup:", error);
+    res.status(500).json({ message: "Lỗi xác nhận giao dịch." });
+  }
+};
+
+// Admin từ chối giao dịch tiền mặt
+export const adminRejectCashTopup = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const tx = await TopupTransaction.findOne({
+      where: { transaction_id: id, payment_method: "cash", status: "pending" },
+    });
+
+    if (!tx) {
+      return res.status(404).json({ message: "Giao dịch không tồn tại hoặc đã xử lý." });
+    }
+
+    tx.status = "cancelled";
+    await tx.save();
+
+    res.json({ message: "Đã từ chối giao dịch." });
+  } catch (error) {
+    console.error("Lỗi reject topup:", error);
+    res.status(500).json({ message: "Lỗi từ chối giao dịch." });
+  }
+};
