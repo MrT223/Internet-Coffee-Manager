@@ -193,17 +193,70 @@ export const getPendingTopup = async (req, res) => {
         code: tx.transaction_code,
         amount: tx.amount,
         status: tx.status,
+        payment_method: tx.payment_method,
         created_at: tx.created_at,
       },
-      bankInfo: {
+      bankInfo: tx.payment_method === "transfer" ? {
         bankName: "MB Bank",
         bankId: "970422",
         accountNumber: "696969696969",
         accountName: "NGO QUANG KHAM",
         content: `CYBEROPS ${tx.transaction_code}`,
-      },
+      } : null,
     });
   } catch (error) {
     res.status(500).json({ message: "Lỗi lấy giao dịch." });
+  }
+};
+
+// Tạo giao dịch nạp tiền mặt (chỉ khi đang chơi tại máy)
+export const createCashTopup = async (req, res) => {
+  const userId = req.user.user_id;
+  const { amount } = req.body;
+
+  // Validate mệnh giá
+  const validAmounts = [10000, 20000, 50000, 100000, 200000, 500000, 1000000];
+  if (!validAmounts.includes(parseInt(amount))) {
+    return res.status(400).json({ message: "Mệnh giá không hợp lệ!" });
+  }
+
+  try {
+    // Kiểm tra user đang playing (đang ngồi tại máy)
+    const user = await User.findByPk(userId);
+    if (!user || user.status !== "playing") {
+      return res.status(400).json({ 
+        message: "Bạn cần đang ngồi tại máy để nạp tiền mặt. Vui lòng liên hệ nhân viên tại quầy." 
+      });
+    }
+
+    // Hủy các giao dịch pending cũ của user này
+    await TopupTransaction.update(
+      { status: "expired" },
+      { where: { user_id: userId, status: "pending" } }
+    );
+
+    // Tạo giao dịch nạp tiền mặt
+    const transactionCode = generateTransactionCode();
+    const newTx = await TopupTransaction.create({
+      user_id: userId,
+      amount: parseInt(amount),
+      transaction_code: transactionCode,
+      status: "pending",
+      payment_method: "cash",
+    });
+
+    res.status(201).json({
+      message: "Yêu cầu nạp tiền mặt đã được tạo! Vui lòng thanh toán với nhân viên.",
+      transaction: {
+        id: newTx.transaction_id,
+        code: newTx.transaction_code,
+        amount: newTx.amount,
+        status: newTx.status,
+        payment_method: newTx.payment_method,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi tạo cash topup:", error);
+    res.status(500).json({ message: "Lỗi tạo giao dịch." });
   }
 };

@@ -31,6 +31,7 @@ const ComputerMap = () => {
 
     const [computers, setComputers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [bookingTimeout, setBookingTimeout] = useState({ minutes: 60, display: '1 giờ' });
     
     // Modals state
     const [adminModal, setAdminModal] = useState({ show: false, computer: null });
@@ -57,6 +58,13 @@ const ComputerMap = () => {
 
     useEffect(() => {
         fetchComputers();
+        // Fetch booking timeout
+        axiosClient.get('/settings/booking-timeout')
+            .then(res => setBookingTimeout({
+                minutes: res.data.booking_timeout_minutes,
+                display: res.data.display
+            }))
+            .catch(err => console.error('Đọc timeout:', err));
         // Auto refresh mỗi 30s
         const interval = setInterval(fetchComputers, 30000);
         return () => clearInterval(interval);
@@ -333,9 +341,14 @@ const ComputerMap = () => {
                         <p className="text-slate-300 mb-4">
                             Bạn muốn đặt trước <span className="text-blue-400 font-bold">{userModal.computer.computer_name}</span>?
                         </p>
-                        <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30 mb-6">
+                        <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/30 mb-4">
                             <p className="text-sm text-slate-400">Phí đặt cọc giữ chỗ (hoàn khi ngồi vào máy)</p>
                             <p className="text-2xl font-bold text-green-400">36.000 đ</p>
+                        </div>
+                        <div className="bg-slate-800/50 p-2 rounded-lg mb-6">
+                            <p className="text-xs text-slate-400">
+                                ⏱️ Máy sẽ được giữ trong <span className="text-blue-400 font-bold">{bookingTimeout.display}</span>
+                            </p>
                         </div>
                         <div className="flex gap-4">
                             <button 

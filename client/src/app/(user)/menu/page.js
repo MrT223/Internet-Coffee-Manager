@@ -12,6 +12,7 @@ export default function MenuPage() {
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState({}); 
+    const [paymentMethod, setPaymentMethod] = useState('balance'); // 'balance' or 'cash'
     const { user, updateUserBalance } = useAuth();
     const { isPlaying } = useGameSession();
     const { toast } = useToast();
@@ -59,8 +60,16 @@ export default function MenuPage() {
                 };
             });
 
-            const res = await axiosClient.post('/orders', { cart: cartItems });
-            toast.success("Đặt món thành công! Bếp đang chuẩn bị.");
+            const res = await axiosClient.post('/orders', { 
+                cart: cartItems,
+                payment_method: paymentMethod 
+            });
+            
+            const successMsg = paymentMethod === 'cash' 
+                ? "Đặt món thành công! Thanh toán tiền mặt khi nhận đồ."
+                : "Đặt món thành công! Đã trừ số dư.";
+            toast.success(successMsg);
+            
             if (res.data.newBalance !== undefined) {
                 updateUserBalance(res.data.newBalance);
             }
@@ -187,26 +196,57 @@ export default function MenuPage() {
             {/* Floating Cart */}
             {totalItems > 0 && isPlaying && (
                 <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] z-50">
-                    <div className="max-w-4xl mx-auto flex justify-between items-center">
-                        <div className="text-white">
-                            <span className="text-slate-400">Giỏ hàng:</span>
-                            <span className="font-bold ml-2">{totalItems} món</span>
-                            <span className="mx-3 text-slate-600">|</span>
-                            <span className="text-green-400 font-bold text-xl font-mono">{totalAmount.toLocaleString()} ₫</span>
+                    <div className="max-w-4xl mx-auto">
+                        {/* Payment Method Selection */}
+                        <div className="flex justify-center gap-2 mb-3">
+                            <button
+                                onClick={() => setPaymentMethod('balance')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                    paymentMethod === 'balance'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
+                            >
+                                💳 Trừ Số Dư
+                            </button>
+                            <button
+                                onClick={() => setPaymentMethod('cash')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                    paymentMethod === 'cash'
+                                        ? 'bg-yellow-600 text-white'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
+                            >
+                                💵 Tiền Mặt
+                            </button>
                         </div>
-                        <div className="flex gap-3">
-                            <button 
-                                onClick={() => setCart({})}
-                                className="px-4 py-2 bg-slate-800 text-slate-300 font-medium rounded-lg hover:bg-slate-700 transition-all"
-                            >
-                                Xóa
-                            </button>
-                            <button 
-                                onClick={handleCheckout}
-                                className="px-8 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold rounded-lg shadow-lg shadow-orange-900/30 transition-all active:scale-95"
-                            >
-                                Đặt Ngay 🚀
-                            </button>
+
+                        {/* Cart Summary */}
+                        <div className="flex justify-between items-center">
+                            <div className="text-white">
+                                <span className="text-slate-400">Giỏ hàng:</span>
+                                <span className="font-bold ml-2">{totalItems} món</span>
+                                <span className="mx-3 text-slate-600">|</span>
+                                <span className="text-green-400 font-bold text-xl font-mono">{totalAmount.toLocaleString()} ₫</span>
+                            </div>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setCart({})}
+                                    className="px-4 py-2 bg-slate-800 text-slate-300 font-medium rounded-lg hover:bg-slate-700 transition-all"
+                                >
+                                    Xóa
+                                </button>
+                                <button 
+                                    onClick={handleCheckout}
+                                    className={`px-8 py-2 text-white font-bold rounded-lg shadow-lg transition-all active:scale-95 ${
+                                        paymentMethod === 'cash'
+                                            ? 'bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 shadow-yellow-900/30'
+                                            : 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-orange-900/30'
+                                    }`}
+                                >
+                                    {paymentMethod === 'cash' ? 'Đặt (Tiền Mặt) 💵' : 'Đặt Ngay 🚀'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

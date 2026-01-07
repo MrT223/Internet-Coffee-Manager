@@ -9,7 +9,7 @@ const RATE_PER_HOUR = 36000; // 36,000đ/hour
 
 export const placeOrder = async (req, res) => {
   const userId = req.user.user_id;
-  const { cart } = req.body;
+  const { cart, payment_method = "balance" } = req.body;
 
   if (!cart || cart.length === 0) {
     return res.status(400).json({ message: "Giỏ hàng trống." });
@@ -25,43 +25,49 @@ export const placeOrder = async (req, res) => {
 
     const user = await User.findByPk(userId);
     
-    // Tính số dư hiệu lực nếu đang trong phiên chơi
-    let effectiveBalance = user.balance;
-    
-    if (user.status === "playing") {
-      // Tìm máy đang chơi để tính thời gian
-      const computer = await Computer.findOne({
-        where: { current_user_id: userId },
-      });
+    // Nếu thanh toán bằng số dư, kiểm tra số dư
+    if (payment_method === "balance") {
+      // Tính số dư hiệu lực nếu đang trong phiên chơi
+      let effectiveBalance = user.balance;
       
-      if (computer && computer.session_start_time) {
-        const now = Date.now();
-        const sessionStartTime = new Date(computer.session_start_time).getTime();
-        const elapsedMs = Math.max(0, now - sessionStartTime);
-        const elapsedMinutes = elapsedMs / (1000 * 60);
-        const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
-        const currentSessionCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
+      if (user.status === "playing") {
+        // Tìm máy đang chơi để tính thời gian
+        const computer = await Computer.findOne({
+          where: { current_user_id: userId },
+        });
         
-        effectiveBalance = user.balance - currentSessionCost;
+        if (computer && computer.session_start_time) {
+          const now = Date.now();
+          const sessionStartTime = new Date(computer.session_start_time).getTime();
+          const elapsedMs = Math.max(0, now - sessionStartTime);
+          const elapsedMinutes = elapsedMs / (1000 * 60);
+          const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
+          const currentSessionCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
+          
+          effectiveBalance = user.balance - currentSessionCost;
+        }
       }
-    }
-    
-    // Kiểm tra số dư HIỆU LỰC có đủ không
-    if (effectiveBalance < totalAmount) {
-      await t.rollback();
-      return res.status(400).json({ 
-        message: `Số dư không đủ. Số dư hiệu lực: ${Math.floor(effectiveBalance).toLocaleString()}đ, cần: ${totalAmount.toLocaleString()}đ` 
-      });
-    }
+      
+      // Kiểm tra số dư HIỆU LỰC có đủ không
+      if (effectiveBalance < totalAmount) {
+        await t.rollback();
+        return res.status(400).json({ 
+          message: `Số dư không đủ. Số dư hiệu lực: ${Math.floor(effectiveBalance).toLocaleString()}đ, cần: ${totalAmount.toLocaleString()}đ` 
+        });
+      }
 
-    user.balance -= totalAmount;
-    await user.save({ transaction: t });
+      // Trừ tiền khi thanh toán bằng số dư
+      user.balance -= totalAmount;
+      await user.save({ transaction: t });
+    }
+    // Nếu payment_method === "cash", không trừ tiền
 
     const newOrder = await FoodOrder.create(
       {
         user_id: userId,
         total_amount: totalAmount,
         status: "pending",
+        payment_method: payment_method,
       },
       { transaction: t }
     );
@@ -78,9 +84,14 @@ export const placeOrder = async (req, res) => {
 
     await t.commit();
 
+    const paymentMessage = payment_method === "cash" 
+      ? "Đặt món thành công! Thanh toán tiền mặt khi nhận đồ." 
+      : "Đặt món thành công! Vui lòng đợi nhân viên phục vụ.";
+
     res.status(201).json({
-      message: "Đặt món thành công! Vui lòng đợi nhân viên phục vụ.",
+      message: paymentMessage,
       newBalance: user.balance,
+      payment_method: payment_method,
     });
   } catch (error) {
     await t.rollback();
@@ -137,10 +148,13 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Đơn hàng không tồn tại." });
     }
     if (status === "cancelled" && order.status !== "cancelled") {
-      const user = await User.findByPk(order.user_id);
-      if (user) {
-        user.balance += order.total_amount;
-        await user.save({ transaction: t });
+      // Chỉ hoàn tiền nếu thanh toán bằng số dư (không phải tiền mặt)
+      if (order.payment_method === "balance") {
+        const user = await User.findByPk(order.user_id);
+        if (user) {
+          user.balance += order.total_amount;
+          await user.save({ transaction: t });
+        }
       }
     }
 

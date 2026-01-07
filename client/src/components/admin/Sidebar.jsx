@@ -12,6 +12,7 @@ const menuItems = [
     { name: 'Hội viên & Nạp tiền', href: '/admin/users', icon: '👥' },
     { name: 'Khuyến mãi', href: '/admin/promotions', icon: '🎁' },
     { name: 'Hỗ trợ Chat', href: '/admin/chat', icon: '💬', hasNotification: true },
+    { name: 'Cài đặt', href: '/admin/settings', icon: '⚙️' },
 ];
 
 const Sidebar = ({ isOpen }) => {

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useGameSession } from '@/context/GameSessionContext';
 import { useToast } from '@/context/ToastContext';
 import axiosClient from '@/api/axios';
 import { useRouter } from 'next/navigation';
@@ -17,6 +18,7 @@ const AMOUNTS = [
 
 export default function TopupPage() {
     const { user, loading: authLoading, updateUserBalance } = useAuth();
+    const { isPlaying } = useGameSession();
     const { toast } = useToast();
     const router = useRouter();
     
@@ -27,6 +29,7 @@ export default function TopupPage() {
     const [confirming, setConfirming] = useState(false);
     const [activeTab, setActiveTab] = useState('topup'); // 'topup' | 'history'
     const [activeBonus, setActiveBonus] = useState(null);
+    const [cashLoading, setCashLoading] = useState(false);
 
     useEffect(() => {
         fetchActiveBonus();
@@ -114,6 +117,29 @@ export default function TopupPage() {
             toast.info('Đã hủy giao dịch');
         } catch (e) {
             toast.error('Lỗi hủy giao dịch');
+        }
+    };
+
+    // Nạp tiền mặt (chỉ khi đang chơi tại máy)
+    const handleCashTopup = async () => {
+        if (!selectedAmount) {
+            toast.warning('Vui lòng chọn mệnh giá!');
+            return;
+        }
+        if (!isPlaying) {
+            toast.warning('Bạn cần đang ngồi tại máy để nạp tiền mặt!');
+            return;
+        }
+        setCashLoading(true);
+        try {
+            const res = await axiosClient.post('/topup/cash', { amount: selectedAmount });
+            toast.success(res.data.message);
+            setSelectedAmount(null);
+            fetchHistory();
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Lỗi tạo giao dịch tiền mặt');
+        } finally {
+            setCashLoading(false);
         }
     };
 
@@ -219,15 +245,32 @@ export default function TopupPage() {
                     })}
                 </div>
 
-                        {/* Continue Button */}
+                        {/* Continue Buttons */}
                         {!currentTx && (
-                            <button
-                                onClick={handleCreateTopup}
-                                disabled={!selectedAmount || loading}
-                                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-green-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? 'Đang xử lý...' : 'TIẾP TỤC →'}
-                            </button>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleCreateTopup}
+                                    disabled={!selectedAmount || loading}
+                                    className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-green-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Đang xử lý...' : '💳 CHUYỂN KHOẢN QUA MÃ QR →'}
+                                </button>
+                                
+                                {/* Nút nạp tiền mặt - chỉ hiện khi đang chơi tại máy */}
+                                {isPlaying ? (
+                                    <button
+                                        onClick={handleCashTopup}
+                                        disabled={!selectedAmount || cashLoading}
+                                        className="w-full py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg shadow-yellow-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {cashLoading ? 'Đang xử lý...' : '💵 NẠP TIỀN MẶT TẠI QUẦY'}
+                                    </button>
+                                ) : (
+                                    <div className="text-center text-slate-500 text-sm py-2">
+                                        💻 Đang ngồi tại máy? Bạn có thể nạp tiền mặt tại quầy
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         {/* Hiển thị QR Code */}

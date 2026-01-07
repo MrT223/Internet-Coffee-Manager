@@ -34,6 +34,10 @@ const TopupTransaction = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    payment_method: {
+      type: DataTypes.ENUM("transfer", "cash"),
+      defaultValue: "transfer",
+    },
   },
   {
     tableName: "topup_transaction",

@@ -14,6 +14,7 @@ import MenuItem from "./models/MenuItem.js";
 import FoodOrder from "./models/FoodOrder.js";
 import OrderDetail from "./models/OrderDetail.js";
 import Message from "./models/Message.js";
+import SystemSetting from "./models/SystemSetting.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -24,6 +25,7 @@ import topupRoutes from "./routes/topupRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import geminiRoutes from "./routes/geminiRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
 import TopupTransaction from "./models/TopupTransaction.js";
 import { cancelExpiredBookings } from "./controllers/computerController.js";
 
@@ -48,6 +50,7 @@ app.use("/api/topup", topupRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/ai", geminiRoutes);
+app.use("/api/settings", settingsRoutes);
 
 Role.hasMany(User, { foreignKey: "role_id" });
 User.belongsTo(Role, { foreignKey: "role_id" });
@@ -429,6 +432,15 @@ const startServer = async () => {
         balance: 9999999,
       });
     }
+
+    // Seed default system settings
+    const [bookingTimeoutSetting] = await SystemSetting.findOrCreate({
+      where: { setting_key: "booking_timeout_minutes" },
+      defaults: {
+        setting_value: "60",
+        description: "Thời gian giữ chỗ đặt trước (phút)",
+      },
+    });
     httpServer.listen(PORT, () => {
       console.log(`Server running at: http://localhost:${PORT}`);
     });

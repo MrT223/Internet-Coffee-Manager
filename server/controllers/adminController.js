@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Computer from "../models/Computer.js";
 import FoodOrder from "../models/FoodOrder.js";
+import TopupTransaction from "../models/TopupTransaction.js";
 import bcrypt from "bcrypt";
 import { Op } from "sequelize";
 
@@ -247,6 +248,162 @@ export const getRevenueChartData = async (req, res) => {
     res.json(chartData);
   } catch (error) {
     console.error("Chart Error:", error);
+    res.status(500).json({ message: "Lỗi lấy dữ liệu biểu đồ" });
+  }
+};
+
+// Thống kê tài chính chi tiết (7 ngày gần đây)
+export const getFinancialStats = async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Tổng tiền nạp thành công (7 ngày)
+    const totalTopup = await TopupTransaction.sum('amount', {
+      where: { 
+        status: 'success',
+        confirmed_at: { [Op.gte]: sevenDaysAgo }
+      }
+    }) || 0;
+
+    // Tổng doanh thu đồ ăn (7 ngày)
+    const foodRevenueTotal = await FoodOrder.sum('total_amount', {
+      where: { 
+        status: 'completed',
+        order_date: { [Op.gte]: sevenDaysAgo }
+      }
+    }) || 0;
+
+    // Doanh thu đồ ăn tiền mặt (7 ngày)
+    const foodRevenueCash = await FoodOrder.sum('total_amount', {
+      where: { 
+        status: 'completed', 
+        payment_method: 'cash',
+        order_date: { [Op.gte]: sevenDaysAgo }
+      }
+    }) || 0;
+
+    // Doanh thu đồ ăn từ số dư (7 ngày)
+    const foodRevenueBalance = await FoodOrder.sum('total_amount', {
+      where: { 
+        status: 'completed', 
+        payment_method: 'balance',
+        order_date: { [Op.gte]: sevenDaysAgo }
+      }
+    }) || 0;
+
+    // Tiền nạp tiền mặt (7 ngày)
+    const cashTopup = await TopupTransaction.sum('amount', {
+      where: { 
+        status: 'success', 
+        payment_method: 'cash',
+        confirmed_at: { [Op.gte]: sevenDaysAgo }
+      }
+    }) || 0;
+
+    // Tiền nạp chuyển khoản (7 ngày)
+    const transferTopup = await TopupTransaction.sum('amount', {
+      where: { 
+        status: 'success', 
+        payment_method: 'transfer',
+        confirmed_at: { [Op.gte]: sevenDaysAgo }
+      }
+    }) || 0;
+
+    res.json({
+      totalTopup,
+      cashTopup,
+      transferTopup,
+      foodRevenueTotal,
+      foodRevenueCash,
+      foodRevenueBalance,
+    });
+  } catch (error) {
+    console.error("Financial Stats Error:", error);
+    res.status(500).json({ message: "Lỗi lấy thống kê tài chính" });
+  }
+};
+
+// Biểu đồ linh hoạt theo type
+export const getChartData = async (req, res) => {
+  const { type = 'topup' } = req.query;
+  
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Khởi tạo dữ liệu 7 ngày
+    const dailyData = {};
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+      dailyData[dateStr] = 0;
+    }
+
+    if (type === 'topup') {
+      // Biểu đồ tiền nạp
+      const transactions = await TopupTransaction.findAll({
+        where: {
+          status: 'success',
+          confirmed_at: { [Op.gte]: sevenDaysAgo },
+        },
+        attributes: ['confirmed_at', 'amount'],
+      });
+
+      transactions.forEach((tx) => {
+        const date = new Date(tx.confirmed_at);
+        const dateStr = date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+        if (dailyData[dateStr] !== undefined) {
+          dailyData[dateStr] += parseInt(tx.amount);
+        }
+      });
+    } else if (type === 'food_total') {
+      // Biểu đồ doanh thu đồ ăn tổng
+      const orders = await FoodOrder.findAll({
+        where: {
+          status: 'completed',
+          order_date: { [Op.gte]: sevenDaysAgo },
+        },
+        attributes: ['order_date', 'total_amount'],
+      });
+
+      orders.forEach((order) => {
+        const date = new Date(order.order_date);
+        const dateStr = date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+        if (dailyData[dateStr] !== undefined) {
+          dailyData[dateStr] += parseInt(order.total_amount);
+        }
+      });
+    } else if (type === 'food_cash') {
+      // Biểu đồ doanh thu đồ ăn tiền mặt
+      const orders = await FoodOrder.findAll({
+        where: {
+          status: 'completed',
+          payment_method: 'cash',
+          order_date: { [Op.gte]: sevenDaysAgo },
+        },
+        attributes: ['order_date', 'total_amount'],
+      });
+
+      orders.forEach((order) => {
+        const date = new Date(order.order_date);
+        const dateStr = date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+        if (dailyData[dateStr] !== undefined) {
+          dailyData[dateStr] += parseInt(order.total_amount);
+        }
+      });
+    }
+
+    const chartData = Object.entries(dailyData)
+      .map(([date, value]) => ({ date, value }))
+      .reverse();
+
+    res.json(chartData);
+  } catch (error) {
+    console.error("Chart Data Error:", error);
     res.status(500).json({ message: "Lỗi lấy dữ liệu biểu đồ" });
   }
 };

@@ -25,6 +25,12 @@ const StatCard = ({ title, value, icon, color, subText }) => (
     </div>
 );
 
+const chartTypes = [
+    { key: 'topup', label: '💵 Tiền Nạp', color: '#3b82f6', gradientId: 'colorTopup' },
+    { key: 'food_total', label: '🍔 Đồ Ăn (Tổng)', color: '#22c55e', gradientId: 'colorFoodTotal' },
+    { key: 'food_cash', label: '💰 Đồ Ăn (Tiền Mặt)', color: '#f59e0b', gradientId: 'colorFoodCash' },
+];
+
 export default function AdminDashboard() {
     const { loading: authLoading, isAuthenticated } = useAuth();
     const [stats, setStats] = useState({
@@ -33,21 +39,27 @@ export default function AdminDashboard() {
         pendingOrders: 0,
         totalUsers: 0
     });
+    const [financialStats, setFinancialStats] = useState({
+        totalTopup: 0,
+        foodRevenueTotal: 0,
+        foodRevenueCash: 0,
+    });
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState([]);
+    const [chartType, setChartType] = useState('topup');
+
     useEffect(() => {
-        // Đợi auth load xong và đã đăng nhập mới fetch
         if (authLoading || !isAuthenticated) return;
 
         const fetchStats = async () => {
             try {
-                const [statsRes, chartRes] = await Promise.all([
+                const [statsRes, financialRes] = await Promise.all([
                     axiosClient.get('/admin/stats'),
-                    axiosClient.get('/admin/stats/chart')
+                    axiosClient.get('/admin/stats/financial'),
                 ]);
 
                 setStats(statsRes.data);
-                setChartData(chartRes.data);
+                setFinancialStats(financialRes.data);
             } catch (error) {
                 console.error("Lỗi tải thống kê:", error);
             } finally {
@@ -55,10 +67,26 @@ export default function AdminDashboard() {
             }
         };
         fetchStats();
-        // Refresh mỗi 30s
         const interval = setInterval(fetchStats, 30000);
         return () => clearInterval(interval);
     }, [authLoading, isAuthenticated]);
+
+    // Fetch chart data when chartType changes
+    useEffect(() => {
+        if (authLoading || !isAuthenticated) return;
+
+        const fetchChartData = async () => {
+            try {
+                const res = await axiosClient.get(`/admin/stats/chart-data?type=${chartType}`);
+                setChartData(res.data);
+            } catch (error) {
+                console.error("Lỗi tải biểu đồ:", error);
+            }
+        };
+        fetchChartData();
+    }, [chartType, authLoading, isAuthenticated]);
+
+    const currentChartConfig = chartTypes.find(c => c.key === chartType) || chartTypes[0];
 
     if (loading) return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -71,21 +99,40 @@ export default function AdminDashboard() {
                 Tổng Quan Hệ Thống
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Stats Cards - Row 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <StatCard
+                    title="Tổng Tiền Nạp"
+                    value={`${financialStats.totalTopup.toLocaleString()} đ`}
+                    icon="💵"
+                    color="text-blue-400"
+                    subText="Tổng tiền nạp thành công"
+                />
                 <StatCard
                     title="Doanh Thu Đồ Ăn"
-                    value={`${stats.revenue.toLocaleString()} đ`}
-                    icon="💰"
+                    value={`${financialStats.foodRevenueTotal.toLocaleString()} đ`}
+                    icon="🍔"
                     color="text-green-400"
-                    subText="Tổng doanh thu đơn hàng hoàn thành"
+                    subText="Tổng doanh thu đồ ăn"
+                />
+                <StatCard
+                    title="Đồ Ăn Tiền Mặt"
+                    value={`${financialStats.foodRevenueCash.toLocaleString()} đ`}
+                    icon="💰"
+                    color="text-yellow-400"
+                    subText="Thanh toán tiền mặt"
                 />
                 <StatCard
                     title="Máy Đang Online"
                     value={stats.activeComputers}
                     icon="🖥️"
-                    color="text-blue-400"
+                    color="text-cyan-400"
                     subText="Số máy đang có người sử dụng"
                 />
+            </div>
+
+            {/* Stats Cards - Row 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
                     title="Đơn Bếp Chờ Xử Lý"
                     value={stats.pendingOrders}
@@ -101,21 +148,38 @@ export default function AdminDashboard() {
                 />
             </div>
 
-            {/* Biểu đồ Doanh thu */}
+            {/* Biểu đồ với Toggle */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg w-full">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <span className="text-green-400">📈</span> Biểu Đồ Doanh Thu (7 Ngày)
+                        <span className="text-green-400">📈</span> Biểu Đồ 7 Ngày Gần Nhất
                     </h3>
+                    
+                    {/* Chart Type Toggle */}
+                    <div className="flex gap-2 flex-wrap">
+                        {chartTypes.map(type => (
+                            <button
+                                key={type.key}
+                                onClick={() => setChartType(type.key)}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                    chartType === type.key 
+                                        ? 'bg-blue-600 text-white shadow-lg' 
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
+                            >
+                                {type.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 
                 <div style={{ width: '100%', height: 350 }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <defs>
-                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                                <linearGradient id={currentChartConfig.gradientId} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={currentChartConfig.color} stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor={currentChartConfig.color} stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -130,24 +194,26 @@ export default function AdminDashboard() {
                             <YAxis 
                                 stroke="#94a3b8" 
                                 tick={{fontSize: 14}}
-                                tickFormatter={(value) => `${value/1000}k`}
+                                tickFormatter={(value) => value >= 1000 ? `${Math.round(value/1000)}k` : value}
+                                domain={[0, (dataMax) => Math.max(dataMax, 10000)]}
                                 axisLine={false}
                                 tickLine={false}
                                 dx={-10}
+                                width={50}
                             />
                             <Tooltip 
                                 contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff', borderRadius: '8px'}}
-                                itemStyle={{color: '#4ade80'}}
-                                formatter={(value) => [`${value.toLocaleString()} đ`, "Doanh thu"]}
+                                itemStyle={{color: currentChartConfig.color}}
+                                formatter={(value) => [`${value.toLocaleString()} đ`, currentChartConfig.label]}
                                 labelStyle={{color: '#94a3b8', marginBottom: '5px'}}
                             />
                             <Area 
                                 type="monotone" 
-                                dataKey="revenue" 
-                                stroke="#22c55e" 
+                                dataKey="value" 
+                                stroke={currentChartConfig.color} 
                                 strokeWidth={4}
                                 fillOpacity={1} 
-                                fill="url(#colorRevenue)" 
+                                fill={`url(#${currentChartConfig.gradientId})`} 
                                 activeDot={{ r: 8, strokeWidth: 0, fill: '#fff' }}
                             />
                         </AreaChart>

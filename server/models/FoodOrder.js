@@ -21,6 +21,10 @@ const FoodOrder = sequelize.define(
       type: DataTypes.ENUM("pending", "completed", "cancelled"),
       defaultValue: "pending",
     },
+    payment_method: {
+      type: DataTypes.ENUM("balance", "cash"),
+      defaultValue: "balance",
+    },
     order_date: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

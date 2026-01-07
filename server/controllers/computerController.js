@@ -419,12 +419,16 @@ export const endSession = async (req, res) => {
   }
 };
 
-const BOOKING_TIMEOUT = 60 * 60 * 1000;
+import { getSettingValue } from "./settingsController.js";
 
 export const cancelExpiredBookings = async () => {
   const now = new Date();
 
   try {
+    // Đọc timeout từ database (mặc định 60 phút)
+    const timeoutMinutes = parseInt(await getSettingValue("booking_timeout_minutes", "60"));
+    const BOOKING_TIMEOUT = timeoutMinutes * 60 * 1000;
+
     const expiredBookings = await Computer.findAll({
       where: {
         status: "dat truoc",

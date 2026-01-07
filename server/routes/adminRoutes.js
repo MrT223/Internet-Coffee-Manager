@@ -9,6 +9,11 @@ router.get("/stats", protect, authorize([1, 2]), adminController.getDashboardSta
 
 router.get("/stats/chart", protect, authorize([1, 2]), adminController.getRevenueChartData);
 
+// Thống kê tài chính và biểu đồ linh hoạt
+router.get("/stats/financial", protect, authorize([1, 2]), adminController.getFinancialStats);
+
+router.get("/stats/chart-data", protect, authorize([1, 2]), adminController.getChartData);
+
 router.use(protect, authorize([1]));
 
 router.get("/users", adminController.getAllUsers);

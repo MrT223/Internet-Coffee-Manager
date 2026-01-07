@@ -14,10 +14,9 @@ const sequelize = new Sequelize(
     timezone: "+07:00", 
     dialectOptions: {
       useUTC: false,
-      ssl: {
-        require: true,
-        rejectUnauthorized: false, 
-      },
+      ssl: process.env.DB_SSL === "true" 
+        ? { require: true, rejectUnauthorized: false } 
+        : false,
     },
     define: {
       timestamps: true,

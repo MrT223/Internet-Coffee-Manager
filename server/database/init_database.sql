@@ -1,7 +1,7 @@
 -- =====================================================
 -- SQL Script: Khởi tạo Database cho Net_Manager (PostgreSQL)
--- Cập nhật: 2025-12-28
--- Đồng bộ với Sequelize Models
+-- Cập nhật: 2026-01-07
+-- Đồng bộ với Sequelize Models (bao gồm payment_method & system_setting)
 -- =====================================================
 
 -- LƯU Ý: Chạy script này sau khi đã tạo database CyberOps
@@ -10,6 +10,7 @@
 -- =====================================================
 -- XÓA CÁC BẢNG VÀ TYPES CŨ (theo thứ tự phụ thuộc)
 -- =====================================================
+DROP TABLE IF EXISTS system_setting CASCADE;
 DROP TABLE IF EXISTS promotion CASCADE;
 DROP TABLE IF EXISTS topup_transaction CASCADE;
 DROP TABLE IF EXISTS message CASCADE;
@@ -24,6 +25,8 @@ DROP TABLE IF EXISTS role CASCADE;
 DROP TYPE IF EXISTS order_status CASCADE;
 DROP TYPE IF EXISTS topup_status CASCADE;
 DROP TYPE IF EXISTS promotion_type CASCADE;
+DROP TYPE IF EXISTS payment_method_order CASCADE;
+DROP TYPE IF EXISTS payment_method_topup CASCADE;
 
 -- =====================================================
 -- 1. BẢNG ROLE (Vai trò)
@@ -52,7 +55,7 @@ CREATE TABLE "User" (
     role_id INT REFERENCES role(role_id) ON DELETE SET NULL,
     balance INT DEFAULT 0,
     status VARCHAR(255) DEFAULT 'offline',
-    avatar VARCHAR(255) NULL                      -- [THÊM] Cột avatar
+    avatar VARCHAR(255) NULL
 );
 
 -- Dữ liệu mẫu (password: 123456 - hash bằng bcrypt)
@@ -71,7 +74,7 @@ CREATE TABLE computer (
     x INT NOT NULL,
     y INT NOT NULL,
     status VARCHAR(255) DEFAULT 'bao tri',
-    current_user_id BIGINT REFERENCES "User"(user_id) ON DELETE SET NULL,  -- [SỬA] INT -> BIGINT
+    current_user_id BIGINT REFERENCES "User"(user_id) ON DELETE SET NULL,
     session_start_time TIMESTAMP NULL,
     UNIQUE (x, y)
 );
@@ -122,14 +125,17 @@ INSERT INTO "Menu_Item" (food_name, price, stock, image_url) VALUES
 -- =====================================================
 -- 5. BẢNG FOOD_ORDER (Đơn hàng đồ ăn)
 -- Model: FoodOrder.js -> tableName: "food_order"
+-- [MỚI] Thêm cột payment_method
 -- =====================================================
 CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled');
+CREATE TYPE payment_method_order AS ENUM ('balance', 'cash');
 
 CREATE TABLE food_order (
     bill_id SERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,  -- [SỬA] INT -> BIGINT
+    user_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
     total_amount INT NOT NULL,
     status order_status DEFAULT 'pending',
+    payment_method payment_method_order DEFAULT 'balance',
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -153,7 +159,7 @@ CREATE TABLE order_details (
 CREATE TABLE message (
     message_id SERIAL PRIMARY KEY,
     conversation_id VARCHAR(50) NULL,
-    sender_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,  -- [SỬA] INT -> BIGINT
+    sender_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
     sender_name VARCHAR(255) NOT NULL,
     role_id INT DEFAULT 3,
     content TEXT NOT NULL,
@@ -164,8 +170,10 @@ CREATE TABLE message (
 -- =====================================================
 -- 8. BẢNG TOPUP_TRANSACTION (Giao dịch nạp tiền)
 -- Model: TopupTransaction.js -> tableName: "topup_transaction"
+-- [MỚI] Thêm cột payment_method
 -- =====================================================
 CREATE TYPE topup_status AS ENUM ('pending', 'success', 'expired', 'cancelled');
+CREATE TYPE payment_method_topup AS ENUM ('transfer', 'cash');
 
 CREATE TABLE topup_transaction (
     transaction_id SERIAL PRIMARY KEY,
@@ -173,6 +181,7 @@ CREATE TABLE topup_transaction (
     amount INT NOT NULL,
     transaction_code VARCHAR(20) NOT NULL UNIQUE,
     status topup_status DEFAULT 'pending',
+    payment_method payment_method_topup DEFAULT 'transfer',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     confirmed_at TIMESTAMP NULL
 );
@@ -198,9 +207,24 @@ CREATE TABLE promotion (
 );
 
 INSERT INTO promotion (title, description, type, bonus_percent, min_amount, start_date, end_date, is_active) VALUES
-('🔥 Nạp 100K nhận 120K', 'Khuyến mãi nạp tiền +20% áp dụng từ 28/12 - 31/12', 'topup_bonus', 20, 100000, '2025-12-28 00:00:00+07', '2025-12-31 23:59:59+07', true),
-('🎄 Sự kiện Giáng Sinh', 'Giảm giá 50% dịch vụ trong tuần lễ Giáng Sinh', 'event', 0, 0, '2025-12-20 00:00:00+07', '2025-12-27 23:59:59+07', false),
-('🛠️ Bảo trì hệ thống', 'Hệ thống sẽ bảo trì từ 2:00 - 4:00 sáng ngày 01/01/2026', 'announcement', 0, 0, '2025-12-30 00:00:00+07', '2026-01-01 04:00:00+07', true);
+('🔥 Nạp 100K nhận 120K', 'Khuyến mãi nạp tiền +20% áp dụng từ 01/01 - 31/01', 'topup_bonus', 20, 100000, '2026-01-01 00:00:00+07', '2026-01-31 23:59:59+07', true),
+('🎄 Sự kiện Tết Nguyên Đán', 'Giảm giá 50% dịch vụ trong tuần lễ Tết', 'event', 0, 0, '2026-01-25 00:00:00+07', '2026-02-02 23:59:59+07', false),
+('🛠️ Bảo trì hệ thống', 'Hệ thống sẽ bảo trì từ 2:00 - 4:00 sáng ngày 15/01/2026', 'announcement', 0, 0, '2026-01-14 00:00:00+07', '2026-01-15 04:00:00+07', true);
+
+-- =====================================================
+-- 10. BẢNG SYSTEM_SETTING (Cài đặt hệ thống)
+-- [MỚI] Model: SystemSetting.js -> tableName: "system_setting"
+-- =====================================================
+CREATE TABLE system_setting (
+    setting_id SERIAL PRIMARY KEY,
+    setting_key VARCHAR(50) NOT NULL UNIQUE,
+    setting_value VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NULL
+);
+
+-- Giá trị mặc định
+INSERT INTO system_setting (setting_key, setting_value, description) VALUES
+('booking_timeout_minutes', '60', 'Thời gian giữ chỗ đặt trước (phút)');
 
 -- =====================================================
 -- HOÀN TẤT
