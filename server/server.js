@@ -15,6 +15,7 @@ import FoodOrder from "./models/FoodOrder.js";
 import OrderDetail from "./models/OrderDetail.js";
 import Message from "./models/Message.js";
 import SystemSetting from "./models/SystemSetting.js";
+import SessionHistory from "./models/SessionHistory.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -26,6 +27,7 @@ import promotionRoutes from "./routes/promotionRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import geminiRoutes from "./routes/geminiRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import sessionHistoryRoutes from "./routes/sessionHistoryRoutes.js";
 import TopupTransaction from "./models/TopupTransaction.js";
 import { cancelExpiredBookings } from "./controllers/computerController.js";
 
@@ -51,6 +53,7 @@ app.use("/api/promotions", promotionRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/ai", geminiRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/session-history", sessionHistoryRoutes);
 
 Role.hasMany(User, { foreignKey: "role_id" });
 User.belongsTo(Role, { foreignKey: "role_id" });

@@ -1,5 +1,6 @@
 import Computer from "../models/Computer.js";
 import User from "../models/User.js";
+import SessionHistory from "../models/SessionHistory.js";
 import sequelize from "../config/database.js";
 import { Op } from "sequelize";
 
@@ -424,6 +425,18 @@ export const endSession = async (req, res) => {
     user.balance = newBalance;
     user.status = "online";
     await user.save({ transaction: t });
+
+    // Lưu lịch sử phiên chơi
+    await SessionHistory.create({
+      user_id: userId,
+      computer_id: computer.computer_id,
+      computer_name: computer.computer_name,
+      start_time: computer.session_start_time,
+      end_time: new Date(),
+      duration_minutes: Math.floor(elapsedMinutes),
+      total_cost: totalCost,
+      hourly_rate: RATE_PER_HOUR,
+    }, { transaction: t });
 
     // Reset máy
     computer.status = "trong";

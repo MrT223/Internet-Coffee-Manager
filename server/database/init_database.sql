@@ -1,7 +1,7 @@
 -- =====================================================
 -- SQL Script: Khởi tạo Database cho Net_Manager (PostgreSQL)
--- Cập nhật: 2026-01-07
--- Đồng bộ với Sequelize Models (bao gồm payment_method & system_setting)
+-- Cập nhật: 2026-01-08
+-- Đồng bộ với Sequelize Models (bao gồm session_history)
 -- =====================================================
 
 -- LƯU Ý: Chạy script này sau khi đã tạo database CyberOps
@@ -10,6 +10,7 @@
 -- =====================================================
 -- XÓA CÁC BẢNG VÀ TYPES CŨ (theo thứ tự phụ thuộc)
 -- =====================================================
+DROP TABLE IF EXISTS session_history CASCADE;
 DROP TABLE IF EXISTS system_setting CASCADE;
 DROP TABLE IF EXISTS promotion CASCADE;
 DROP TABLE IF EXISTS topup_transaction CASCADE;
@@ -126,7 +127,6 @@ INSERT INTO "Menu_Item" (food_name, price, stock, image_url) VALUES
 -- =====================================================
 -- 5. BẢNG FOOD_ORDER (Đơn hàng đồ ăn)
 -- Model: FoodOrder.js -> tableName: "food_order"
--- [MỚI] Thêm cột payment_method
 -- =====================================================
 CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled');
 CREATE TYPE payment_method_order AS ENUM ('balance', 'cash');
@@ -171,7 +171,6 @@ CREATE TABLE message (
 -- =====================================================
 -- 8. BẢNG TOPUP_TRANSACTION (Giao dịch nạp tiền)
 -- Model: TopupTransaction.js -> tableName: "topup_transaction"
--- [MỚI] Thêm cột payment_method
 -- =====================================================
 CREATE TYPE topup_status AS ENUM ('pending', 'success', 'expired', 'cancelled');
 CREATE TYPE payment_method_topup AS ENUM ('transfer', 'cash');
@@ -214,7 +213,7 @@ INSERT INTO promotion (title, description, type, bonus_percent, min_amount, star
 
 -- =====================================================
 -- 10. BẢNG SYSTEM_SETTING (Cài đặt hệ thống)
--- [MỚI] Model: SystemSetting.js -> tableName: "system_setting"
+-- Model: SystemSetting.js -> tableName: "system_setting"
 -- =====================================================
 CREATE TABLE system_setting (
     setting_id SERIAL PRIMARY KEY,
@@ -223,9 +222,29 @@ CREATE TABLE system_setting (
     description VARCHAR(255) NULL
 );
 
--- Giá trị mặc định
 INSERT INTO system_setting (setting_key, setting_value, description) VALUES
 ('booking_timeout_minutes', '60', 'Thời gian giữ chỗ đặt trước (phút)');
+
+-- =====================================================
+-- 11. BẢNG SESSION_HISTORY (Lịch sử phiên chơi)
+-- Model: SessionHistory.js -> tableName: "session_history"
+-- =====================================================
+CREATE TABLE session_history (
+    session_id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
+    computer_id INT NOT NULL REFERENCES computer(computer_id) ON DELETE CASCADE,
+    computer_name VARCHAR(255) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    duration_minutes INT NOT NULL,
+    total_cost INT NOT NULL,
+    hourly_rate INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index để tìm kiếm nhanh theo user và thời gian
+CREATE INDEX idx_session_history_user ON session_history(user_id);
+CREATE INDEX idx_session_history_time ON session_history(end_time DESC);
 
 -- =====================================================
 -- HOÀN TẤT

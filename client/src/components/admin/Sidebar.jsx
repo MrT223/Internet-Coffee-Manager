@@ -12,6 +12,7 @@ const menuItems = [
     { name: 'Quản lý Menu', href: '/admin/menu', icon: '🍔' },
     { name: 'Đơn hàng (Bếp)', href: '/admin/orders', icon: '🔔' },
     { name: 'Hội viên & Nạp tiền', href: '/admin/users', icon: '👥' },
+    { name: 'Lịch sử chơi', href: '/admin/sessions', icon: '📜' },
     { name: 'Giao dịch Nạp tiền', href: '/admin/topups', icon: '💳', hasPendingCash: true },
     { name: 'Khuyến mãi', href: '/admin/promotions', icon: '🎁' },
     { name: 'Hỗ trợ Chat', href: '/admin/chat', icon: '💬', hasNotification: true },
