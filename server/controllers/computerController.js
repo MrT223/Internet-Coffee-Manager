@@ -22,7 +22,7 @@ export const getAllComputers = async (req, res) => {
 };
 
 export const createComputer = async (req, res) => {
-  const { x, y, computer_name } = req.body;
+  const { x, y, computer_name, hourly_rate } = req.body;
   try {
     const exists = await Computer.findOne({ where: { x, y } });
     if (exists)
@@ -33,6 +33,7 @@ export const createComputer = async (req, res) => {
       y,
       computer_name,
       status: "trong",
+      hourly_rate: hourly_rate || null,
     });
     res.json(newComp);
   } catch (error) {
@@ -43,7 +44,7 @@ export const createComputer = async (req, res) => {
 // --- ĐÃ SỬA: Chỉ dùng để Update thông tin (Tên, Trạng thái) ---
 export const updateComputer = async (req, res) => {
   const { id } = req.params;
-  const { status, computer_name } = req.body; // Thêm computer_name để sửa tên
+  const { status, computer_name, hourly_rate } = req.body;
 
   try {
     const comp = await Computer.findByPk(id);
@@ -52,6 +53,11 @@ export const updateComputer = async (req, res) => {
     // Cập nhật tên nếu có
     if (computer_name) {
       comp.computer_name = computer_name;
+    }
+
+    // Cập nhật giá tiền/giờ nếu có
+    if (hourly_rate !== undefined) {
+      comp.hourly_rate = hourly_rate === "" || hourly_rate === 0 ? null : parseInt(hourly_rate);
     }
 
     // Cập nhật trạng thái nếu có
@@ -271,10 +277,10 @@ export const refundBooking = async (req, res) => {
 };
 
 // --- Lấy session hiện tại của user ---
+const DEFAULT_RATE_PER_HOUR = 36000;
+
 export const getActiveSession = async (req, res) => {
   const userId = req.user.user_id;
-  const RATE_PER_HOUR = 36000;
-  const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
 
   try {
     const user = await User.findByPk(userId);
@@ -328,6 +334,10 @@ export const getActiveSession = async (req, res) => {
       ? new Date(computer.session_start_time).getTime()
       : now;
     
+    // Sử dụng giá tùy chỉnh của máy hoặc giá mặc định
+    const RATE_PER_HOUR = computer.hourly_rate || DEFAULT_RATE_PER_HOUR;
+    const RATE_PER_MINUTE = RATE_PER_HOUR / 60;
+    
     const elapsedMs = Math.max(0, now - sessionStartTime);
     const elapsedMinutes = elapsedMs / (1000 * 60);
     const currentCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
@@ -358,7 +368,6 @@ export const getActiveSession = async (req, res) => {
 // --- Kết thúc session (logout khỏi máy) ---
 export const endSession = async (req, res) => {
   const userId = req.user.user_id;
-  const RATE_PER_HOUR = 36000; // 36,000đ/hour = 600đ/phút = 10đ/giây
   const t = await sequelize.transaction();
 
   try {
@@ -388,12 +397,15 @@ export const endSession = async (req, res) => {
       ? new Date(computer.session_start_time).getTime()
       : now; // Nếu không có thời gian bắt đầu, coi như vừa bắt đầu
     
+    // Sử dụng giá tùy chỉnh của máy hoặc giá mặc định
+    const RATE_PER_HOUR = computer.hourly_rate || DEFAULT_RATE_PER_HOUR;
+    const RATE_PER_MINUTE = RATE_PER_HOUR / 60;
+    
     const elapsedMs = Math.max(0, now - sessionStartTime);
     const elapsedMinutes = elapsedMs / (1000 * 60);
     const elapsedHours = elapsedMinutes / 60;
     
-    // Tính tiền theo phút (600đ/phút) để chính xác hơn
-    const RATE_PER_MINUTE = RATE_PER_HOUR / 60; // 600đ/phút
+    // Tính tiền theo phút
     const totalCost = Math.floor(elapsedMinutes * RATE_PER_MINUTE);
 
     console.log("EndSession Debug:", {

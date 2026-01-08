@@ -34,6 +34,11 @@ const Computer = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    hourly_rate: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+    },
   },
   {
     tableName: "computer",

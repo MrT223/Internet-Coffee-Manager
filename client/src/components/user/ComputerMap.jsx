@@ -36,6 +36,8 @@ const ComputerMap = () => {
     // Modals state
     const [adminModal, setAdminModal] = useState({ show: false, computer: null });
     const [userModal, setUserModal] = useState({ show: false, computer: null });
+    const [editingRate, setEditingRate] = useState('');
+    const DEFAULT_HOURLY_RATE = 36000;
 
     const canManage = user && (user.role_id === 1 || user.role_id === 2);
     const isUser = user && user.role_id === 3;
@@ -174,6 +176,22 @@ const ComputerMap = () => {
         }
     };
 
+    // 6. Update hourly rate
+    const handleUpdateRate = async () => {
+        const comp = adminModal.computer;
+        if (!comp) return;
+        
+        try {
+            const newRate = editingRate === '' ? null : parseInt(editingRate);
+            await axiosClient.put(`/computers/${comp.computer_id}`, { hourly_rate: newRate });
+            toast.success(newRate ? `Đã cập nhật giá: ${newRate.toLocaleString()}đ/h` : 'Đã đặt về giá mặc định');
+            fetchComputers();
+            setAdminModal({ show: false, computer: null });
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Lỗi cập nhật giá');
+        }
+    };
+
     // --- Helper Styles ---
     const getStatusStyle = (status) => {
         switch (status) {
@@ -303,6 +321,41 @@ const ComputerMap = () => {
                                     )}
                                 </div>
                             )}
+                            
+                            {/* Hourly Rate Section */}
+                            <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm text-slate-400">💰 Giá tiền/giờ:</span>
+                                    <span className="font-bold text-green-400">
+                                        {adminModal.computer.hourly_rate 
+                                            ? `${adminModal.computer.hourly_rate.toLocaleString()}đ/h (VIP)`
+                                            : `${DEFAULT_HOURLY_RATE.toLocaleString()}đ/h (Mặc định)`
+                                        }
+                                    </span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        placeholder="VD: 20000"
+                                        value={editingRate}
+                                        onChange={(e) => setEditingRate(e.target.value)}
+                                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                                    />
+                                    <button
+                                        onClick={handleUpdateRate}
+                                        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold"
+                                    >
+                                        Lưu
+                                    </button>
+                                    <button
+                                        onClick={() => { setEditingRate(''); handleUpdateRate(); }}
+                                        className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm"
+                                        title="Đặt về giá mặc định"
+                                    >
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">

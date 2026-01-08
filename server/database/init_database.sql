@@ -76,6 +76,7 @@ CREATE TABLE computer (
     status VARCHAR(255) DEFAULT 'bao tri',
     current_user_id BIGINT REFERENCES "User"(user_id) ON DELETE SET NULL,
     session_start_time TIMESTAMP NULL,
+    hourly_rate INT NULL,
     UNIQUE (x, y)
 );
 
@@ -91,12 +92,12 @@ INSERT INTO computer (computer_name, x, y, status) VALUES
 ('PC-16', 5, 1, 'trong'), ('PC-17', 5, 2, 'trong'), ('PC-18', 5, 3, 'trong'),
 ('PC-19', 5, 5, 'trong'), ('PC-20', 5, 6, 'trong');
 
--- Khu VIP (Hàng 7-8)
-INSERT INTO computer (computer_name, x, y, status) VALUES 
-('VIP-01', 7, 10, 'trong'), ('VIP-02', 7, 11, 'trong'),
-('VIP-03', 7, 12, 'trong'), ('VIP-04', 7, 13, 'trong'),
-('VIP-05', 8, 10, 'trong'), ('VIP-06', 8, 11, 'trong'),
-('VIP-07', 8, 12, 'trong'), ('VIP-08', 8, 13, 'trong');
+-- Khu VIP (Hàng 7-8) - Giá 20,000đ/giờ
+INSERT INTO computer (computer_name, x, y, status, hourly_rate) VALUES 
+('VIP-01', 7, 10, 'trong', 20000), ('VIP-02', 7, 11, 'trong', 20000),
+('VIP-03', 7, 12, 'trong', 20000), ('VIP-04', 7, 13, 'trong', 20000),
+('VIP-05', 8, 10, 'trong', 20000), ('VIP-06', 8, 11, 'trong', 20000),
+('VIP-07', 8, 12, 'trong', 20000), ('VIP-08', 8, 13, 'trong', 20000);
 
 -- =====================================================
 -- 4. BẢNG MENU_ITEM (Thực đơn đồ ăn/uống)
