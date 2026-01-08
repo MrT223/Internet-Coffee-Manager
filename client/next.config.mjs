@@ -15,11 +15,11 @@ const nextConfig = {
             },
         ],
     },
-    // Chỉ định root cho Turbopack là thư mục client
+
     turbopack: {
         root: __dirname,
     },
-    // Chỉ bật outputFileTracingRoot khi build production (deploy)
+
     ...(process.env.NODE_ENV === 'production' && {
         outputFileTracingRoot: path.join(__dirname, '../'),
     }),

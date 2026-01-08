@@ -28,14 +28,14 @@ export default function UserDashboard() {
     useEffect(() => {
         if (!authLoading && user) {
             fetchMyOrders();
-            fetchSession(); // Fetch session khi vào dashboard
+            fetchSession();
         }
     }, [authLoading, user]);
 
     const fetchMyOrders = async () => {
         try {
             const res = await axiosClient.get('/orders/my-orders');
-            setOrders(res.data.slice(0, 5)); // Chỉ lấy 5 đơn gần nhất
+            setOrders(res.data.slice(0, 5));
         } catch (err) {
             console.error(err);
         } finally {
@@ -75,7 +75,7 @@ export default function UserDashboard() {
     return (
         <div className="min-h-screen bg-slate-950 p-6">
             <div className="max-w-4xl mx-auto space-y-6">
-                {/* Welcome Card */}
+
                 <div className={`rounded-2xl p-6 shadow-xl ${isPlaying 
                     ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
                     : 'bg-gradient-to-r from-blue-600 to-purple-600'}`}>
@@ -97,7 +97,7 @@ export default function UserDashboard() {
                     </p>
                 </div>
 
-                {/* Gaming Session Card - Only show when playing */}
+
                 {isPlaying && sessionInfo && (
                     <div className="bg-slate-900 border-2 border-green-500 rounded-xl p-6 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
                         <div className="flex items-center justify-between mb-4">
@@ -116,14 +116,14 @@ export default function UserDashboard() {
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* Computer Info */}
+
                             <div className="bg-slate-800 rounded-lg p-4 text-center">
                                 <Monitor className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                                 <div className="text-slate-400 text-sm">Máy đang chơi</div>
                                 <div className="text-xl font-bold text-white">{sessionInfo.computer?.name}</div>
                             </div>
                             
-                            {/* Countdown Timer */}
+
                             <div className="bg-slate-800 rounded-lg p-4 text-center">
                                 <Clock className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
                                 <div className="text-slate-400 text-sm">Thời gian còn lại</div>
@@ -132,7 +132,7 @@ export default function UserDashboard() {
                                 </div>
                             </div>
                             
-                            {/* Effective Balance */}
+
                             <div className="bg-slate-800 rounded-lg p-4 text-center">
                                 <Wallet className="w-8 h-8 text-green-400 mx-auto mb-2" />
                                 <div className="text-slate-400 text-sm">Số dư còn lại</div>
@@ -148,7 +148,7 @@ export default function UserDashboard() {
                     </div>
                 )}
 
-                {/* Stats Cards */}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
                         <div className="text-slate-400 text-sm mb-1">Số dư tài khoản</div>
@@ -182,7 +182,7 @@ export default function UserDashboard() {
                     </div>
                 </div>
 
-                {/* Quick Actions */}
+
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
                     <h2 className="text-lg font-bold text-white mb-4">Truy cập nhanh</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -224,7 +224,7 @@ export default function UserDashboard() {
                     </div>
                 </div>
 
-                {/* Recent Orders */}
+
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-white">Đơn hàng gần đây</h2>

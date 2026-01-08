@@ -15,9 +15,7 @@ export default function UserLayout({ children }) {
                 <main>
                     {children}
                 </main>
-                {/* Widget chat luôn hiển thị */}
                 {user && <ChatWidget user={user} />}
-                {/* AI Chatbot */}
                 <AIChatWidget />
             </div>
         </GameSessionProvider>

@@ -117,7 +117,7 @@ export const changeUserRole = async (req, res) => {
   }
 };
 
-// Toggle khóa/mở khóa user
+
 export const toggleLockUser = async (req, res) => {
   const { id } = req.params;
   const adminUserId = req.user.user_id;
@@ -136,7 +136,7 @@ export const toggleLockUser = async (req, res) => {
       return res.status(404).json({ message: "Người dùng không tồn tại." });
     }
 
-    // Toggle status: locked <-> offline
+
     if (user.status === 'locked') {
       user.status = 'offline';
       await user.save();
@@ -151,7 +151,7 @@ export const toggleLockUser = async (req, res) => {
   }
 };
 
-// Reset password về mặc định
+
 export const resetPassword = async (req, res) => {
   const { id } = req.params;
   const { new_password } = req.body;
@@ -252,14 +252,14 @@ export const getRevenueChartData = async (req, res) => {
   }
 };
 
-// Thống kê tài chính chi tiết (7 ngày gần đây)
+
 export const getFinancialStats = async (req, res) => {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // Tổng tiền nạp thành công (7 ngày)
+
     const totalTopup = await TopupTransaction.sum('amount', {
       where: { 
         status: 'success',
@@ -267,7 +267,7 @@ export const getFinancialStats = async (req, res) => {
       }
     }) || 0;
 
-    // Tổng doanh thu đồ ăn (7 ngày)
+
     const foodRevenueTotal = await FoodOrder.sum('total_amount', {
       where: { 
         status: 'completed',
@@ -275,7 +275,7 @@ export const getFinancialStats = async (req, res) => {
       }
     }) || 0;
 
-    // Doanh thu đồ ăn tiền mặt (7 ngày)
+
     const foodRevenueCash = await FoodOrder.sum('total_amount', {
       where: { 
         status: 'completed', 
@@ -284,7 +284,7 @@ export const getFinancialStats = async (req, res) => {
       }
     }) || 0;
 
-    // Doanh thu đồ ăn từ số dư (7 ngày)
+
     const foodRevenueBalance = await FoodOrder.sum('total_amount', {
       where: { 
         status: 'completed', 
@@ -293,7 +293,7 @@ export const getFinancialStats = async (req, res) => {
       }
     }) || 0;
 
-    // Tiền nạp tiền mặt (7 ngày)
+
     const cashTopup = await TopupTransaction.sum('amount', {
       where: { 
         status: 'success', 
@@ -302,7 +302,7 @@ export const getFinancialStats = async (req, res) => {
       }
     }) || 0;
 
-    // Tiền nạp chuyển khoản (7 ngày)
+
     const transferTopup = await TopupTransaction.sum('amount', {
       where: { 
         status: 'success', 
@@ -325,7 +325,7 @@ export const getFinancialStats = async (req, res) => {
   }
 };
 
-// Biểu đồ linh hoạt theo type
+
 export const getChartData = async (req, res) => {
   const { type = 'topup' } = req.query;
   
@@ -334,7 +334,7 @@ export const getChartData = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // Khởi tạo dữ liệu 7 ngày
+
     const dailyData = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date();
@@ -344,7 +344,6 @@ export const getChartData = async (req, res) => {
     }
 
     if (type === 'topup') {
-      // Biểu đồ tiền nạp
       const transactions = await TopupTransaction.findAll({
         where: {
           status: 'success',
@@ -361,7 +360,6 @@ export const getChartData = async (req, res) => {
         }
       });
     } else if (type === 'food_total') {
-      // Biểu đồ doanh thu đồ ăn tổng
       const orders = await FoodOrder.findAll({
         where: {
           status: 'completed',
@@ -378,7 +376,6 @@ export const getChartData = async (req, res) => {
         }
       });
     } else if (type === 'food_cash') {
-      // Biểu đồ doanh thu đồ ăn tiền mặt
       const orders = await FoodOrder.findAll({
         where: {
           status: 'completed',
